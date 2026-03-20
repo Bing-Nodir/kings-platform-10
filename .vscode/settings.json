@@ -1,0 +1,46 @@
+{
+  "json.schemaDownload.enable": false,
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/package.json"
+      ],
+      "schema": {
+        "type": "object",
+        "properties": {
+          "$schema": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "scripts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "dependencies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "devDependencies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  ]
+}

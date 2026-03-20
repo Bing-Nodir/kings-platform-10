@@ -1,0 +1,14 @@
+Python course video uploads
+
+Drop lesson MP4 files into this folder with the exact filenames below:
+- py-l1.mp4
+- py-l2.mp4
+- py-l3.mp4
+- py-l4.mp4
+- py-l5.mp4
+- py-l6.mp4
+- py-l7.mp4
+- py-l8.mp4
+
+Public URLs will resolve automatically under:
+/media/courses/python-analytics-automation/<lesson-id>.mp4

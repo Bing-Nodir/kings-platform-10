@@ -1,0 +1,5 @@
+customer_id,segment,orders,revenue,last_purchase_days
+C-01,Core,18,4500000,12
+C-02,Growth,9,2100000,25
+C-03,At Risk,3,620000,74
+C-04,VIP,26,7900000,6

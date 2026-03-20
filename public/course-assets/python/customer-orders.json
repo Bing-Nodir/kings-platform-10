@@ -1,0 +1,6 @@
+[
+  { "order_id": "A-1001", "customer_id": "C-01", "amount": 125000, "status": "paid" },
+  { "order_id": "A-1002", "customer_id": "C-02", "amount": 98000, "status": "paid" },
+  { "order_id": "A-1003", "customer_id": "C-01", "amount": 76000, "status": "refunded" },
+  { "order_id": "A-1004", "customer_id": "C-03", "amount": 140000, "status": "paid" }
+]

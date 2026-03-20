@@ -1,0 +1,14 @@
+Data Analytics Professional video uploads
+
+Drop lesson MP4 files into this folder with the exact filenames below:
+- da-l1.mp4
+- da-l2.mp4
+- da-l3.mp4
+- da-l4.mp4
+- da-l5.mp4
+- da-l6.mp4
+- da-l7.mp4
+- da-l8.mp4
+
+Public URLs will resolve automatically under:
+/media/courses/data-analytics-professional/<lesson-id>.mp4
