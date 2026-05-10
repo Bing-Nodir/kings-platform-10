@@ -6,11 +6,26 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
 interface LoginPageProps {
-  searchParams: Promise<{ error?: string; redirect?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; redirect?: string }>;
+}
+
+function safeQueryText(value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error, redirect: redirectTo } = await searchParams;
+  const { error, message, redirect: redirectTo } = await searchParams;
+  const registerHref = redirectTo
+    ? `/register?${new URLSearchParams({ redirect: redirectTo }).toString()}`
+    : "/register";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -22,7 +37,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <CardContent>
           {error && (
             <div className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {decodeURIComponent(error)}
+              {safeQueryText(error)}
+            </div>
+          )}
+          {message && (
+            <div className="mb-4 rounded-md bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+              {safeQueryText(message)}
             </div>
           )}
           <form action={login} className="space-y-4">
@@ -57,7 +77,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Hisob yo&apos;qmi?{" "}
-            <Link href="/register" className="font-medium underline underline-offset-4">
+            <Link href={registerHref} className="font-medium underline underline-offset-4">
               Ro&apos;yxatdan o&apos;ting
             </Link>
           </p>

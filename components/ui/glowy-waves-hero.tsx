@@ -169,35 +169,35 @@ export function GlowyWavesHero({
             offset: 0,
             amplitude: 70,
             frequency: 0.003,
-            color: "rgba(37, 99, 235, 0.8)", // blue-600
+            color: resolveColor(["--hero-wave-1"], 1),
             opacity: 0.45,
           },
           {
             offset: Math.PI / 2,
             amplitude: 90,
             frequency: 0.0026,
-            color: "rgba(6, 182, 212, 0.7)", // cyan-500
+            color: resolveColor(["--hero-wave-2"], 1),
             opacity: 0.35,
           },
           {
             offset: Math.PI,
             amplitude: 60,
             frequency: 0.0034,
-            color: "rgba(59, 130, 246, 0.65)", // blue-500
+            color: resolveColor(["--hero-wave-3"], 1),
             opacity: 0.3,
           },
           {
             offset: Math.PI * 1.5,
             amplitude: 80,
 frequency: 0.0022,
-            color: "rgba(34, 211, 238, 0.25)", // cyan-400
+            color: resolveColor(["--hero-wave-4"], 1),
             opacity: 0.25,
           },
           {
             offset: Math.PI * 2,
             amplitude: 55,
 frequency: 0.004,
-            color: "rgba(96, 165, 250, 0.2)", // blue-400
+            color: resolveColor(["--hero-wave-5"], 1),
             opacity: 0.2,
           },
         ] satisfies WaveConfig[],

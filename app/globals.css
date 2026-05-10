@@ -82,6 +82,11 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --hero-wave-1: rgba(37, 99, 235, 0.8);
+  --hero-wave-2: rgba(6, 182, 212, 0.7);
+  --hero-wave-3: rgba(59, 130, 246, 0.65);
+  --hero-wave-4: rgba(34, 211, 238, 0.25);
+  --hero-wave-5: rgba(96, 165, 250, 0.2);
 }
 
 .dark {
@@ -116,6 +121,51 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --hero-wave-1: rgba(59, 130, 246, 0.82);
+  --hero-wave-2: rgba(34, 211, 238, 0.72);
+  --hero-wave-3: rgba(96, 165, 250, 0.68);
+  --hero-wave-4: rgba(14, 165, 233, 0.3);
+  --hero-wave-5: rgba(125, 211, 252, 0.24);
+}
+
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --background: oklch(0.19 0.026 258);
+  --foreground: oklch(0.97 0.012 240);
+  --card: oklch(0.24 0.024 255);
+  --card-foreground: oklch(0.97 0.012 240);
+  --popover: oklch(0.22 0.026 255);
+  --popover-foreground: oklch(0.97 0.012 240);
+  --primary: oklch(0.74 0.124 229);
+  --primary-foreground: oklch(0.2 0.018 258);
+  --secondary: oklch(0.3 0.028 252);
+  --secondary-foreground: oklch(0.97 0.012 240);
+  --muted: oklch(0.285 0.022 252);
+  --muted-foreground: oklch(0.81 0.02 241);
+  --accent: oklch(0.33 0.035 236);
+  --accent-foreground: oklch(0.98 0.01 240);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(0.38 0.03 248 / 0.55);
+  --input: oklch(0.33 0.028 248 / 0.7);
+  --ring: oklch(0.68 0.1 225);
+  --chart-1: oklch(0.74 0.13 231);
+  --chart-2: oklch(0.7 0.11 199);
+  --chart-3: oklch(0.63 0.12 269);
+  --chart-4: oklch(0.58 0.1 244);
+  --chart-5: oklch(0.52 0.08 214);
+  --sidebar: oklch(0.21 0.025 258);
+  --sidebar-foreground: oklch(0.97 0.012 240);
+  --sidebar-primary: oklch(0.56 0.125 234);
+  --sidebar-primary-foreground: oklch(0.98 0.01 240);
+  --sidebar-accent: oklch(0.3 0.03 248);
+  --sidebar-accent-foreground: oklch(0.97 0.012 240);
+  --sidebar-border: oklch(0.42 0.028 248 / 0.48);
+  --sidebar-ring: oklch(0.68 0.1 225);
+  --hero-wave-1: rgba(96, 165, 250, 0.9);
+  --hero-wave-2: rgba(34, 211, 238, 0.78);
+  --hero-wave-3: rgba(129, 140, 248, 0.7);
+  --hero-wave-4: rgba(59, 130, 246, 0.34);
+  --hero-wave-5: rgba(56, 189, 248, 0.28);
 }
 
 @layer base {

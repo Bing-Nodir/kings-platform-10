@@ -16,6 +16,7 @@ import type { CourseQuiz } from "@/lib/quizzes";
 interface QuizWidgetProps {
   quiz: CourseQuiz;
   courseId: string;
+  lessonId?: string;
   isEnrolled: boolean;
 }
 
@@ -31,6 +32,7 @@ function formatTime(seconds: number) {
 export default function QuizWidget({
   quiz,
   courseId,
+  lessonId,
   isEnrolled,
 }: QuizWidgetProps) {
   const [phase, setPhase] = useState<Phase>("intro");
@@ -156,6 +158,7 @@ export default function QuizWidget({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courseId,
+          lessonId,
           score,
           total,
           percent,

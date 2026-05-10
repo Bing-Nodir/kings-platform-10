@@ -30,8 +30,28 @@ export default async function AdminSettingsPage() {
           label: "Enrollments",
           value: status.summary.totalEnrollments.toLocaleString(),
         },
+        {
+          label: "Preferences",
+          value: status.summary.totalPreferenceProfiles.toLocaleString(),
+        },
+        {
+          label: "Payment intents",
+          value: status.summary.totalPaymentIntents.toLocaleString(),
+        },
+        {
+          label: "Notification jobs",
+          value: status.summary.totalNotificationJobs.toLocaleString(),
+        },
+        {
+          label: "Course submissions",
+          value: status.summary.totalCourseSubmissions.toLocaleString(),
+        },
+        {
+          label: "Content bootstrap",
+          value: "/api/admin/content/bootstrap",
+        },
       ],
-      action: { href: "/api/admin/status", label: "JSON statusni ochish" },
+      action: { href: "/api/health/ready", label: "Readiness JSONni ochish" },
     },
     {
       icon: Bell,
@@ -46,9 +66,25 @@ export default async function AdminSettingsPage() {
           label: "Murojaatlar",
           value: status.summary.totalMessages.toLocaleString(),
         },
-        { label: "Checkout", value: "Server action + order metadata aktiv" },
+        {
+          label: "Queue navbatda",
+          value: status.summary.queuedNotificationJobs.toLocaleString(),
+        },
+        {
+          label: "Queue xatolar",
+          value: status.summary.failedNotificationJobs.toLocaleString(),
+        },
+        {
+          label: "Event loglar",
+          value: status.summary.totalOperationalEvents.toLocaleString(),
+        },
+        {
+          label: "Review queue",
+          value: status.summary.pendingCourseReviews.toLocaleString(),
+        },
+        { label: "Operations hub", value: "/admin/operations" },
       ],
-      action: { href: "/api/admin/overview", label: "Overview JSONni ochish" },
+      action: { href: "/admin/operations", label: "Operations markazini ochish" },
     },
     {
       icon: Shield,
@@ -61,6 +97,18 @@ export default async function AdminSettingsPage() {
           value:
             status.checks.find((check) => check.key === "anthropic-env")?.detail ??
             "Status aniqlanmadi",
+        },
+        {
+          label: "Webhook route",
+          value: "/api/payments/webhook/[provider]",
+        },
+        {
+          label: "Security logs",
+          value: status.summary.totalSecurityEvents.toLocaleString(),
+        },
+        {
+          label: "Delivery providers",
+          value: "Queue tayyor, real email/SMS provider ulanishi kutilmoqda",
         },
         { label: "Legal pages", value: "/privacy va /terms tayyor" },
       ],

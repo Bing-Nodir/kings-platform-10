@@ -1,9 +1,27 @@
 import Link from "next/link";
 import { ArrowRight, Building2, Sparkles, Users2 } from "lucide-react";
 import Footer from "@/components/Footer";
-import { companyStats, mentorProfiles } from "@/lib/site";
+import {
+  getAboutPillarsData,
+  getLiveCompanyStatsData,
+  getMentorProfilesData,
+} from "@/lib/content-store";
 
-export default function AboutPage() {
+export const revalidate = 300;
+
+const pillarIcons = {
+  Users2,
+  Building2,
+  Sparkles,
+} as const;
+
+export default async function AboutPage() {
+  const [companyStats, mentorProfiles, aboutPillars] = await Promise.all([
+    getLiveCompanyStatsData(),
+    getMentorProfilesData(),
+    getAboutPillarsData(),
+  ]);
+
   return (
     <>
       <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,#ffffff_0%,#f8fafc_55%,#ffffff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#020617_50%,#000000_100%)]">
@@ -41,33 +59,24 @@ export default function AboutPage() {
 
         <section className="container mx-auto px-4 py-12 md:px-8 md:py-16">
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-[2rem] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-              <Users2 className="h-6 w-6 text-blue-600" />
-              <h2 className="mt-4 text-xl font-black text-gray-950 dark:text-white">
-                O&apos;quvchi markazidagi product
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-gray-600 dark:text-gray-400">
-                Kurs tanlash, to&apos;lov qilish, darsni davom ettirish va progressni kuzatish bir xil product flow ichida ishlaydi.
-              </p>
-            </div>
-            <div className="rounded-[2rem] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-              <Building2 className="h-6 w-6 text-fuchsia-600" />
-              <h2 className="mt-4 text-xl font-black text-gray-950 dark:text-white">
-                O2O learning model
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-gray-600 dark:text-gray-400">
-                Onlayn darslar va oflayn kampus touchpointlari birga ishlaydi: QR attendance, mentor uchrashuvlari va workshop formatlari bilan.
-              </p>
-            </div>
-            <div className="rounded-[2rem] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-              <Sparkles className="h-6 w-6 text-emerald-600" />
-              <h2 className="mt-4 text-xl font-black text-gray-950 dark:text-white">
-                AI + mentor support
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-gray-600 dark:text-gray-400">
-                AI Mentor 24/7 yordam beradi, mentor esa roadmap, review va final natija uchun yo&apos;naltiradi.
-              </p>
-            </div>
+            {aboutPillars.map((pillar) => {
+              const Icon = pillarIcons[pillar.iconKey as keyof typeof pillarIcons] ?? Sparkles;
+
+              return (
+                <div
+                  key={pillar.title}
+                  className="rounded-[2rem] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950"
+                >
+                  <Icon className={`h-6 w-6 ${pillar.accentClass}`} />
+                  <h2 className="mt-4 text-xl font-black text-gray-950 dark:text-white">
+                    {pillar.title}
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-gray-600 dark:text-gray-400">
+                    {pillar.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </section>
 

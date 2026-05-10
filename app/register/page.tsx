@@ -6,11 +6,26 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
 interface RegisterPageProps {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; redirect?: string }>;
+}
+
+function safeQueryText(value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
-  const { error } = await searchParams;
+  const { error, redirect: redirectTo } = await searchParams;
+  const loginHref = redirectTo
+    ? `/login?${new URLSearchParams({ redirect: redirectTo }).toString()}`
+    : "/login";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -22,10 +37,13 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         <CardContent>
           {error && (
             <div className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {decodeURIComponent(error)}
+              {safeQueryText(error)}
             </div>
           )}
           <form action={signup} className="space-y-4">
+            {redirectTo && (
+              <input type="hidden" name="redirect" value={redirectTo} />
+            )}
             <div className="space-y-2">
               <Label htmlFor="full_name">To&apos;liq ism</Label>
               <Input
@@ -66,7 +84,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Hisob bormi?{" "}
-            <Link href="/login" className="font-medium underline underline-offset-4">
+            <Link href={loginHref} className="font-medium underline underline-offset-4">
               Kirish
             </Link>
           </p>

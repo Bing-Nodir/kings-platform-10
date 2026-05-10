@@ -9,6 +9,7 @@ import {
   Flame,
   Mail,
   Phone,
+  BriefcaseBusiness,
   Settings,
   Shield,
   Star,
@@ -240,6 +241,14 @@ export default async function ProfilePage() {
             >
               <Settings className="h-3.5 w-3.5" /> Sozlamalar
             </Link>
+            {(profile?.role === "instructor" || profile?.role === "admin") && (
+              <Link
+                href="/instructor"
+                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 dark:border-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-950/20"
+              >
+                <BriefcaseBusiness className="h-3.5 w-3.5" /> Instructor Studio
+              </Link>
+            )}
           </div>
 
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
@@ -262,6 +271,11 @@ export default async function ProfilePage() {
                   {profile?.role === "admin" && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
                       <Shield className="h-3 w-3" /> Admin
+                    </span>
+                  )}
+                  {profile?.role === "instructor" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                      <BriefcaseBusiness className="h-3 w-3" /> Instructor
                     </span>
                   )}
                   {profile?.company_name && (

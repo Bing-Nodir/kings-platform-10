@@ -1,6 +1,11 @@
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
+import {
+  PUBLIC_MARKETING_REVALIDATE_SECONDS,
+  SITE_CONTENT_CACHE_TAG,
+} from "@/lib/cache-tags";
 import { normalizeMultiline, normalizeSingleLine } from "@/lib/server/validation";
-import { createClient } from "@/utils/supabase/server";
+import { createPublicClient } from "@/utils/supabase/public";
 
 export type SiteContentSection =
   | "Navbar"
@@ -223,11 +228,58 @@ export function getSiteContentEditorFields(
   }));
 }
 
+const getSiteContentRows = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from("site_content")
+      .select("content_key, content_value");
+
+    return {
+      data,
+      error: error
+        ? {
+            code: error.code,
+            message: error.message,
+          }
+        : null,
+    };
+  },
+  ["site-content"],
+  {
+    tags: [SITE_CONTENT_CACHE_TAG],
+    revalidate: PUBLIC_MARKETING_REVALIDATE_SECONDS,
+  }
+);
+
+function isMissingIncrementalCacheError(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.message.includes("incrementalCache missing in unstable_cache")
+  );
+}
+
 export const getSiteContent = cache(async (): Promise<SiteContentMap> => {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("site_content")
-    .select("content_key, content_value");
+  const { data, error } = await getSiteContentRows().catch(async (cacheError) => {
+    if (!isMissingIncrementalCacheError(cacheError)) {
+      throw cacheError;
+    }
+
+    const supabase = createPublicClient();
+    const fallbackResult = await supabase
+      .from("site_content")
+      .select("content_key, content_value");
+
+    return {
+      data: fallbackResult.data,
+      error: fallbackResult.error
+        ? {
+            code: fallbackResult.error.code,
+            message: fallbackResult.error.message,
+          }
+        : null,
+    };
+  });
 
   if (error || !data) {
     return defaultSiteContent;

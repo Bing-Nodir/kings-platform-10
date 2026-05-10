@@ -12,3 +12,13 @@ Drop lesson MP4 files into this folder with the exact filenames below:
 
 Public URLs will resolve automatically under:
 /media/courses/data-analytics-professional/<lesson-id>.mp4
+
+Quality variants are also supported. Add real transcoded files like:
+- da-l1-1080p.mp4
+- da-l1-720p.mp4
+- da-l1-480p.mp4
+
+The player will show 1080p / 720p / 480p only when those files really exist.
+Captions are WebVTT files:
+- da-l1.uz.vtt
+- da-l1.en.vtt

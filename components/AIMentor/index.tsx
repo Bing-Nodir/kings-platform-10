@@ -1,7 +1,15 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bot, RotateCcw, Send, Sparkles, User, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Bot,
+  RotateCcw,
+  Send,
+  Sparkles,
+  User,
+  Loader2,
+} from "lucide-react";
 import { MarkdownMessage } from "./MarkdownMessage";
 
 interface Message {
@@ -41,6 +49,7 @@ export default function AIMentor({
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [rulesAccepted, setRulesAccepted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -49,6 +58,17 @@ export default function AIMentor({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    setRulesAccepted(
+      window.localStorage.getItem("kings-ai-mentor-rules-accepted") === "true"
+    );
+  }, []);
+
+  const acceptRules = () => {
+    window.localStorage.setItem("kings-ai-mentor-rules-accepted", "true");
+    setRulesAccepted(true);
+  };
 
   // Load conversation history on mount
   useEffect(() => {
@@ -79,7 +99,7 @@ export default function AIMentor({
 
   const sendMessage = useCallback(
     async (text: string) => {
-      if (!text.trim() || isLoading) return;
+      if (!text.trim() || isLoading || !rulesAccepted) return;
 
       const userMessage: Message = { role: "user", content: text.trim() };
       const updatedMessages = [...messages, userMessage];
@@ -178,7 +198,15 @@ export default function AIMentor({
         inputRef.current?.focus();
       }
     },
-    [messages, isLoading, courseId, lessonTitle, progressPercent, saveConversation]
+    [
+      messages,
+      isLoading,
+      rulesAccepted,
+      courseId,
+      lessonTitle,
+      progressPercent,
+      saveConversation,
+    ]
   );
 
   const handleSubmit = (event: { preventDefault(): void }) => {
@@ -233,6 +261,28 @@ export default function AIMentor({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
+        {!rulesAccepted ? (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-100">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-1 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-black">AI Mentor qoidalari</p>
+                <p className="mt-1 text-xs leading-6">
+                  AI Mentor bilan hurmatli tilda gaplashing. So'kinish,
+                  kamsitish va zararli so'rovlar yuborish mumkin emas.
+                </p>
+                <button
+                  type="button"
+                  onClick={acceptRules}
+                  className="mt-3 rounded-lg bg-amber-900 px-3 py-1.5 text-xs font-black text-white hover:bg-amber-800"
+                >
+                  Tushundim
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <div className="space-y-4">
           {messages.map((message, index) => (
             <div
@@ -288,7 +338,8 @@ export default function AIMentor({
               <button
                 key={prompt}
                 onClick={() => sendMessage(prompt)}
-                className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-purple-800 dark:hover:bg-purple-950/20 dark:hover:text-purple-400"
+                disabled={!rulesAccepted}
+                className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-purple-800 dark:hover:bg-purple-950/20 dark:hover:text-purple-400"
               >
                 {prompt}
               </button>
@@ -305,9 +356,13 @@ export default function AIMentor({
             value={input}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Savol yozing... (Enter - yuborish)"
+            placeholder={
+              rulesAccepted
+                ? "Savol yozing... (Enter - yuborish)"
+                : "Avval AI Mentor qoidalarini tasdiqlang..."
+            }
             rows={1}
-            disabled={isLoading}
+            disabled={isLoading || !rulesAccepted}
             className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:bg-white disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:bg-gray-800"
             style={{ maxHeight: "120px" }}
             onInput={(event) => {
@@ -318,7 +373,7 @@ export default function AIMentor({
           />
           <button
             type="submit"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || !rulesAccepted || !input.trim()}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
           >
             {isLoading ? (

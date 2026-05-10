@@ -13,18 +13,30 @@ import {
   ClipboardCheck,
   FileText,
   Lock,
+  MessageSquare,
   PlayCircle,
+  Radio,
   Sparkles,
   StickyNote,
 } from "lucide-react";
 import AIMentor from "@/components/AIMentor";
+import CourseDiscussionPanel from "@/components/CourseDiscussionPanel";
+import CourseQuestionPanel from "@/components/CourseQuestionPanel";
 import CourseLessonPlayer from "@/components/CourseLessonPlayer";
 import QuizWidget from "@/components/QuizWidget";
 import type { Course } from "@/lib/catalog";
 import { getMasteryLevel } from "@/lib/course-experience";
 import { getQuizByCourseId } from "@/lib/quizzes";
+import { useCourseContentRealtime } from "@/hooks/useCourseContentRealtime";
 
-type Tab = "overview" | "mentor" | "resources" | "notes" | "quiz";
+type Tab =
+  | "overview"
+  | "mentor"
+  | "resources"
+  | "notes"
+  | "discussion"
+  | "questions"
+  | "quiz";
 type SaveState = "idle" | "saving" | "saved" | "error";
 type NotesSaveState = "idle" | "saving" | "saved";
 
@@ -35,6 +47,7 @@ interface WatchClientProps {
   isEnrolled: boolean;
   canUseMentor: boolean;
   checkoutHref: string;
+  viewerWatermark: string;
 }
 
 export default function WatchClient({
@@ -44,6 +57,7 @@ export default function WatchClient({
   isEnrolled,
   canUseMentor,
   checkoutHref,
+  viewerWatermark,
 }: WatchClientProps) {
   const allLessons = course.modules.flatMap((module) =>
     module.lessons.map((lesson) => ({
@@ -52,11 +66,6 @@ export default function WatchClient({
       moduleTitle: module.title,
     }))
   );
-
-  const accessibleLessons = allLessons.filter(
-    (lesson) => isEnrolled || lesson.isFree
-  );
-  const accessibleIds = new Set(accessibleLessons.map((lesson) => lesson.id));
 
   const courseQuiz = getQuizByCourseId(course.id);
 
@@ -77,10 +86,26 @@ export default function WatchClient({
     ])
   );
 
+  const completedLessonsFromProgress = isEnrolled
+    ? Math.max(0, Math.floor((trackedProgress / 100) * allLessons.length))
+    : 0;
+  const accessibleLessons = allLessons.filter(
+    (lesson, index) =>
+      lesson.isFree || (isEnrolled && index <= completedLessonsFromProgress)
+  );
+  const accessibleIds = new Set(accessibleLessons.map((lesson) => lesson.id));
+  const { latestEvent, revision } = useCourseContentRealtime(course.id, isEnrolled);
+
   const activeLesson =
-    allLessons.find((lesson) => lesson.id === activeLessonId) ??
+    accessibleLessons.find((lesson) => lesson.id === activeLessonId) ??
     accessibleLessons[0] ??
     allLessons[0];
+  const activeLessonIndex = allLessons.findIndex(
+    (lesson) => lesson.id === activeLesson.id
+  );
+  const activeLessonContentUpdated =
+    latestEvent &&
+    (!latestEvent.lesson_id || latestEvent.lesson_id === activeLesson.id);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -246,7 +271,7 @@ export default function WatchClient({
       );
 
   const completedLessons = isEnrolled
-    ? Math.max(0, Math.floor((trackedProgress / 100) * allLessons.length))
+    ? completedLessonsFromProgress
     : Math.max(0, currentAccessibleIndex);
   const mastery = getMasteryLevel(progressPercent);
 
@@ -263,6 +288,8 @@ export default function WatchClient({
       icon: FileText,
     },
     { id: "notes", label: "Qaydlar", icon: StickyNote },
+    { id: "discussion", label: "Student discussion", icon: MessageSquare },
+    { id: "questions", label: "Instructor Q&A", icon: MessageSquare },
     ...(courseQuiz ? [{ id: "quiz" as Tab, label: "Test", icon: ClipboardCheck }] : []),
   ];
 
@@ -277,6 +304,50 @@ export default function WatchClient({
       return next;
     });
   };
+
+  async function completeActiveLessonOptimistically() {
+    if (!isEnrolled || !activeLesson) {
+      return;
+    }
+
+    const previousProgress = trackedProgress;
+    const nextProgress = Math.max(
+      trackedProgress,
+      Math.round(((activeLessonIndex + 1) / Math.max(allLessons.length, 1)) * 100)
+    );
+    setTrackedProgress(nextProgress);
+    setSaveState("saved");
+
+    try {
+      const response = await fetch("/api/learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId: course.id,
+          lessonId: activeLesson.id,
+          lessonIndex: activeLessonIndex,
+          previousLessonId: allLessons[activeLessonIndex - 1]?.id ?? null,
+          totalLessons: allLessons.length,
+          durationMinutes: 0,
+          markComplete: true,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | { progressPercent?: number; error?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Progress saqlanmadi.");
+      }
+
+      if (typeof payload?.progressPercent === "number") {
+        setTrackedProgress(payload.progressPercent);
+      }
+    } catch {
+      setTrackedProgress(previousProgress);
+      setSaveState("error");
+    }
+  }
 
   const saveStateMessage = !isEnrolled
     ? "Preview rejimida faqat bepul darslar ochiq"
@@ -293,6 +364,7 @@ export default function WatchClient({
       <main className="flex w-full flex-col lg:w-[calc(100%-350px)] xl:w-[calc(100%-400px)]">
         <div className="overflow-hidden border-b border-gray-200 bg-black dark:border-gray-800">
           <CourseLessonPlayer
+            key={`${activeLesson.id}-${activeLessonContentUpdated ? revision : 0}`}
             title={activeLesson.title}
             summary={activeLesson.summary}
             moduleTitle={activeLesson.moduleTitle}
@@ -306,10 +378,19 @@ export default function WatchClient({
             }
             videoUrl={activeLesson.videoUrl}
             videoMimeType={activeLesson.videoMimeType}
+            videoSources={activeLesson.videoSources}
+            captionTracks={activeLesson.captionTracks}
             uploadFilePath={activeLesson.uploadFilePath}
+            watermark={viewerWatermark}
           />
 
           <div className="border-t border-white/10 bg-gray-950 px-4 py-4 text-white md:px-6">
+            {activeLessonContentUpdated ? (
+              <div className="mb-3 flex items-center gap-2 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold text-emerald-100">
+                <Radio className="h-4 w-4" />
+                CONTENT_UPDATE qabul qilindi: instructor video/contentni yangiladi.
+              </div>
+            ) : null}
             <div className="mb-2 h-1.5 w-full rounded-full bg-white/15">
               <div
                 className="h-full rounded-full bg-red-500"
@@ -545,12 +626,29 @@ export default function WatchClient({
               </div>
             )}
 
+            {activeTab === "questions" && (
+              <CourseQuestionPanel
+                courseId={course.id}
+                lessonId={activeLesson.id}
+                isEnrolled={isEnrolled}
+              />
+            )}
+
+            {activeTab === "discussion" && (
+              <CourseDiscussionPanel
+                courseId={course.id}
+                lessonId={activeLesson.id}
+                isEnrolled={isEnrolled}
+              />
+            )}
+
             {activeTab === "quiz" && courseQuiz && (
               <div className="h-[540px] overflow-y-auto">
                 {isEnrolled ? (
                   <QuizWidget
                     quiz={courseQuiz}
                     courseId={course.id}
+                    lessonId={activeLesson.id}
                     isEnrolled={isEnrolled}
                   />
                 ) : (
@@ -594,6 +692,14 @@ export default function WatchClient({
                   className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
                 >
                   <ArrowLeft className="h-4 w-4" /> Oldingi
+                </button>
+                <button
+                  type="button"
+                  onClick={completeActiveLessonOptimistically}
+                  disabled={!isEnrolled}
+                  className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300"
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Complete lesson
                 </button>
                 <button
                   type="button"

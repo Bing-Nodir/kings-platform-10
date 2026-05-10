@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Footer from "@/components/Footer";
-import { mentorProfiles } from "@/lib/site";
+import { getMentorProfilesData } from "@/lib/content-store";
 
-export default function MentorsPage() {
+export const revalidate = 300;
+
+export default async function MentorsPage() {
+  const mentorProfiles = await getMentorProfilesData();
+
   return (
     <>
       <main className="min-h-screen bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_45%,#ffffff_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#020617_45%,#000000_100%)]">

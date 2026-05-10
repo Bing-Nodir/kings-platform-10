@@ -6,10 +6,25 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireAdminPage({
+  const { supabase, user } = await requireAdminPage({
     loginRedirect: "/login?redirect=/admin",
     fallbackRedirect: "/dashboard",
   });
 
-  return <AdminShell>{children}</AdminShell>;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  return (
+    <AdminShell
+      adminUser={{
+        name: profile?.full_name || user.email || "Admin",
+        email: profile?.email || user.email || "",
+      }}
+    >
+      {children}
+    </AdminShell>
+  );
 }

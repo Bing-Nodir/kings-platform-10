@@ -53,6 +53,46 @@ function calcStreak(sessions: Array<{ created_at: string }>) {
 
 async function getLeaderboardData(): Promise<LeaderboardEntry[]> {
   const supabase = await createClient();
+  const { data: snapshots } = await supabase
+    .from("leaderboard_snapshots")
+    .select(
+      "user_id, total_xp, completed_lessons, passed_quizzes, rank_score, updated_at"
+    )
+    .order("rank_score", { ascending: false })
+    .limit(20);
+
+  if (snapshots && snapshots.length > 0) {
+    const profileIds = snapshots.map((entry) => entry.user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", profileIds);
+    const profilesById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+
+    return snapshots.map((entry) => {
+      const profile = profilesById.get(entry.user_id);
+      const displayName =
+        profile?.full_name ?? profile?.email?.split("@")[0] ?? "Foydalanuvchi";
+      const initials = displayName
+        .split(" ")
+        .map((word: string) => word[0] ?? "")
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+
+      return {
+        userId: entry.user_id,
+        displayName,
+        initials,
+        totalHours: 0,
+        completedCourses: entry.completed_lessons ?? 0,
+        passedQuizzes: entry.passed_quizzes ?? 0,
+        avgQuizScore: 0,
+        streak: 0,
+        score: entry.rank_score ?? entry.total_xp ?? 0,
+      };
+    });
+  }
 
   const [
     { data: profiles },

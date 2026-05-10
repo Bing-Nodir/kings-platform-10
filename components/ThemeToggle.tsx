@@ -1,22 +1,22 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sparkles, Sun } from "lucide-react";
 import { MouseEvent, useEffect, useSyncExternalStore, useState } from "react";
-
-const THEME_EVENT = "kings-theme-change";
+import {
+  THEME_EVENT,
+  applyThemePreference,
+  getStoredThemePreference,
+  resolveThemePreference,
+  toggleThemePreference,
+} from "@/lib/theme";
 
 function getThemeSnapshot() {
   if (typeof window === "undefined") {
-    return false;
+    return "light";
   }
 
-  return (
-    document.documentElement.classList.contains("dark") ||
-    localStorage.theme === "dark" ||
-    (!("theme" in localStorage) &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches)
-  );
+  return resolveThemePreference(getStoredThemePreference());
 }
 
 function subscribe(callback: () => void) {
@@ -52,18 +52,16 @@ function getServerMountedSnapshot() {
 
 export default function ThemeToggle() {
   const [ripples, setRipples] = useState<{ x: number; y: number; id: number }[]>([]);
-  const isDark = useSyncExternalStore(subscribe, getThemeSnapshot, () => false);
+  const currentTheme = useSyncExternalStore(
+    subscribe,
+    getThemeSnapshot,
+    () => "light"
+  );
   const mounted = useSyncExternalStore(
     subscribeToMount,
     getMountedSnapshot,
     getServerMountedSnapshot
   );
-
-  const applyTheme = (nextIsDark: boolean) => {
-    document.documentElement.classList.toggle("dark", nextIsDark);
-    localStorage.theme = nextIsDark ? "dark" : "light";
-    window.dispatchEvent(new Event(THEME_EVENT));
-  };
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -71,8 +69,12 @@ export default function ThemeToggle() {
     const y = event.clientY - rect.top;
 
     setRipples((prev) => [...prev, { x, y, id: Date.now() }]);
-    applyTheme(!isDark);
+    toggleThemePreference();
   };
+
+  useEffect(() => {
+    applyThemePreference(getStoredThemePreference());
+  }, []);
 
   useEffect(() => {
     if (ripples.length === 0) {
@@ -90,7 +92,7 @@ export default function ThemeToggle() {
     <button
       onClick={handleClick}
       className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white/80 text-gray-800 shadow-xl backdrop-blur-sm transition-all hover:scale-110 active:scale-95 dark:border-gray-800 dark:bg-gray-950/80 dark:text-gray-200"
-      aria-label="Tungi/Kunduzgi rejimni almashtirish"
+      aria-label="Sayt theme rejimini almashtirish"
     >
       <AnimatePresence>
         {ripples.map((ripple) => (
@@ -115,7 +117,9 @@ export default function ThemeToggle() {
       <span className="relative z-10 flex h-full w-full items-center justify-center">
         {!mounted ? (
           <div className="h-5 w-5" />
-        ) : isDark ? (
+        ) : currentTheme === "midnight" ? (
+          <Sparkles className="h-5 w-5 text-cyan-400" />
+        ) : currentTheme === "dark" ? (
           <Sun className="h-5 w-5 text-yellow-500" />
         ) : (
           <Moon className="h-5 w-5 text-blue-600" />

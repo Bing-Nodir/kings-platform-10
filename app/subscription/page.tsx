@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { CheckCircle2, Sparkles } from "lucide-react";
 import Footer from "@/components/Footer";
-import { subscriptionPlans } from "@/lib/site";
+import { getSubscriptionPlansData } from "@/lib/content-store";
 
-export default function SubscriptionPage() {
+export const revalidate = 300;
+
+export default async function SubscriptionPage() {
+  const subscriptionPlans = await getSubscriptionPlansData();
+
   return (
     <>
       <main className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_40%,#f8fafc_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#020617_45%,#000000_100%)]">

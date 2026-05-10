@@ -1,5 +1,6 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
+import { SITE_CONTENT_CACHE_TAG } from "@/lib/cache-tags";
 import { getSiteContent, sanitizeSiteContentPayload } from "@/lib/site-content";
 import { requireAdminContext } from "@/lib/server/auth";
 
@@ -81,6 +82,7 @@ export async function PUT(request: Request) {
     "/admin/content",
   ];
 
+  revalidateTag(SITE_CONTENT_CACHE_TAG, "max");
   revalidatePath("/", "layout");
   for (const path of pathsToRefresh) {
     revalidatePath(path, "page");

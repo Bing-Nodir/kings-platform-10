@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Building2, CreditCard, Phone, Send, Users2 } from "lucide-react";
+import { PaymentLogoBadge } from "@/components/PaymentLogos";
+import { getCompanyContactData } from "@/lib/content-store";
 import { getSiteContent } from "@/lib/site-content";
-import { companyContact } from "@/lib/site";
 
 const quickLinks = [
   {
@@ -31,7 +32,10 @@ const quickLinks = [
 ];
 
 export default async function Footer() {
-  const siteContent = await getSiteContent();
+  const [siteContent, companyContact] = await Promise.all([
+    getSiteContent(),
+    getCompanyContactData(),
+  ]);
 
   return (
     <footer className="cv-auto border-t border-gray-200 bg-white pb-8 pt-16 dark:border-gray-800 dark:bg-black">
@@ -164,16 +168,10 @@ export default async function Footer() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             &copy; {new Date().getFullYear()} Kings Education. Barcha huquqlar himoyalangan.
           </p>
-          <div className="mt-4 flex gap-4 sm:mt-0">
-            <span className="rounded border border-yellow-400/50 bg-yellow-400/10 px-2 py-1 text-xs font-bold text-yellow-600 dark:border-yellow-400/70 dark:bg-yellow-400/10 dark:text-yellow-400">
-              PAYME
-            </span>
-            <span className="rounded border border-indigo-500/50 bg-indigo-500/10 px-2 py-1 text-xs font-bold text-indigo-600 dark:border-indigo-500/70 dark:bg-indigo-500/10 dark:text-indigo-400">
-              CLICK
-            </span>
-            <span className="rounded border border-blue-600/50 bg-blue-600/10 px-2 py-1 text-xs font-bold text-blue-700 dark:border-blue-600/70 dark:bg-blue-600/10 dark:text-blue-400">
-              VISA
-            </span>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:mt-0 sm:justify-end">
+            <PaymentLogoBadge brand="payme" />
+            <PaymentLogoBadge brand="click" />
+            <PaymentLogoBadge brand="visa" />
           </div>
         </div>
       </div>

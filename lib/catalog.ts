@@ -4,6 +4,20 @@ export interface CourseResource {
   href: string
 }
 
+export interface CourseVideoSource {
+  label: string
+  src: string
+  mimeType?: string
+  height?: number
+}
+
+export interface CourseCaptionTrack {
+  label: string
+  src: string
+  srcLang: string
+  default?: boolean
+}
+
 export interface CourseLesson {
   id: string
   title: string
@@ -14,6 +28,8 @@ export interface CourseLesson {
   videoUrl?: string
   videoMimeType?: string
   uploadFilePath?: string
+  videoSources?: CourseVideoSource[]
+  captionTracks?: CourseCaptionTrack[]
 }
 
 export interface CourseModule {
@@ -33,6 +49,16 @@ export interface CourseReview {
 export interface CourseSupportItem {
   title: string
   description: string
+}
+
+export interface CourseCertificateTemplate {
+  title: string
+  organizationName: string
+  signatureName: string
+  signatureTitle: string
+  certificateBody: string
+  accentColor: string
+  sealText: string
 }
 
 export interface Course {
@@ -55,6 +81,7 @@ export interface Course {
   supportItems: CourseSupportItem[]
   reviews: CourseReview[]
   modules: CourseModule[]
+  certificateTemplate?: CourseCertificateTemplate
 }
 
 export interface Product {
@@ -65,12 +92,25 @@ export interface Product {
   category: string
   rating: number
   inStock: boolean
+  inventoryCount?: number | null
+  isDigital?: boolean
+  deliveryLabel?: string
+  imageUrl?: string
+  status?: "active" | "draft" | "archived" | "sold_out"
 }
 
 type LessonSeed = [string, string, string, boolean, string]
 
 type LessonOverride = Partial<
-  Pick<CourseLesson, "resources" | "videoUrl" | "videoMimeType" | "uploadFilePath">
+  Pick<
+    CourseLesson,
+    | "resources"
+    | "videoUrl"
+    | "videoMimeType"
+    | "uploadFilePath"
+    | "videoSources"
+    | "captionTracks"
+  >
 >
 
 function resource(title: string, type: string): CourseResource {
@@ -88,10 +128,19 @@ function downloadableResource(title: string, type: string, href: string): Course
 }
 
 function lessonUploadSlot(courseId: string, lessonId: string) {
+  const src = `/media/courses/${courseId}/${lessonId}.mp4`
+
   return {
-    videoUrl: `/media/courses/${courseId}/${lessonId}.mp4`,
+    videoUrl: src,
     videoMimeType: "video/mp4",
     uploadFilePath: `public/media/courses/${courseId}/${lessonId}.mp4`,
+    videoSources: [
+      {
+        label: "Source",
+        src,
+        mimeType: "video/mp4",
+      },
+    ],
   }
 }
 
@@ -226,6 +275,8 @@ function lessonsFromSeeds(seeds: LessonSeed[]) {
       videoUrl: override?.videoUrl,
       videoMimeType: override?.videoMimeType,
       uploadFilePath: override?.uploadFilePath,
+      videoSources: override?.videoSources,
+      captionTracks: override?.captionTracks,
     }
   })
 }
@@ -659,6 +710,11 @@ export const products: Product[] = [
     category: "Resurs",
     rating: 4.8,
     inStock: true,
+    inventoryCount: null,
+    isDigital: true,
+    deliveryLabel: "Instant digital access",
+    imageUrl: "/images/courses/ai-for-analysts.jpg",
+    status: "active",
   },
   {
     id: "mock-interview-kit",
@@ -668,6 +724,11 @@ export const products: Product[] = [
     category: "Career",
     rating: 4.9,
     inStock: true,
+    inventoryCount: null,
+    isDigital: true,
+    deliveryLabel: "Interview pack PDF",
+    imageUrl: "/images/courses/data-analytics-professional.png",
+    status: "active",
   },
   {
     id: "student-planner",
@@ -677,6 +738,10 @@ export const products: Product[] = [
     category: "Planner",
     rating: 4.6,
     inStock: true,
+    inventoryCount: 42,
+    isDigital: false,
+    deliveryLabel: "Print-ready planner",
+    status: "active",
   },
   {
     id: "premium-template-bundle",
@@ -686,6 +751,10 @@ export const products: Product[] = [
     category: "Template",
     rating: 4.7,
     inStock: false,
+    inventoryCount: 0,
+    isDigital: true,
+    deliveryLabel: "Digital bundle",
+    status: "sold_out",
   },
 ]
 

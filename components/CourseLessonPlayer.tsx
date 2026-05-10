@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Captions,
   Maximize,
   Minimize,
   Pause,
@@ -14,6 +15,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import type { CourseCaptionTrack, CourseVideoSource } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
 interface LessonPlayerProps {
@@ -27,6 +29,9 @@ interface LessonPlayerProps {
   videoUrl?: string;
   videoMimeType?: string;
   uploadFilePath?: string;
+  videoSources?: CourseVideoSource[];
+  captionTracks?: CourseCaptionTrack[];
+  watermark?: string;
 }
 
 const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -73,7 +78,7 @@ function PlayerIconButton({
         onClick();
       }}
       className={cn(
-        "inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white transition hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80",
+        "inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-white transition hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 sm:h-10 sm:w-10",
         className
       )}
     >
@@ -91,14 +96,39 @@ function VideoPlaybackSurface({
   helperText,
   videoUrl,
   videoMimeType,
+  videoSources,
+  captionTracks,
+  watermark,
 }: Omit<LessonPlayerProps, "heroGradient" | "uploadFilePath">) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hideChromeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastVolumeRef = useRef(0.8);
+  const pendingSeekRef = useRef<number | null>(null);
+  const shouldResumeAfterSourceChangeRef = useRef(false);
 
-  const [failedVideoUrl, setFailedVideoUrl] = useState<string | null>(null);
+  const normalizedSources = useMemo(() => {
+    if (videoSources?.length) {
+      return videoSources;
+    }
+
+    return videoUrl
+      ? [
+          {
+            label: "Source",
+            src: videoUrl,
+            mimeType: videoMimeType ?? "video/mp4",
+          },
+        ]
+      : [];
+  }, [videoMimeType, videoSources, videoUrl]);
+  const sourceSignature = normalizedSources.map((source) => source.src).join("|");
+  const [failedVideoKey, setFailedVideoKey] = useState<string | null>(null);
+  const [selectedSourceUrl, setSelectedSourceUrl] = useState(
+    normalizedSources[0]?.src ?? ""
+  );
+  const [activeCaptionLang, setActiveCaptionLang] = useState("off");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.8);
@@ -110,7 +140,13 @@ function VideoPlaybackSurface({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
 
-  const canShowVideo = failedVideoUrl !== videoUrl;
+  const activeSource =
+    normalizedSources.find((source) => source.src === selectedSourceUrl) ??
+    normalizedSources[0];
+  const activeVideoUrl = activeSource?.src;
+  const activeVideoMimeType = activeSource?.mimeType ?? videoMimeType ?? "video/mp4";
+  const activeVideoKey = `${sourceSignature}:${activeVideoUrl ?? ""}`;
+  const canShowVideo = Boolean(activeVideoUrl) && failedVideoKey !== activeVideoKey;
   const playedPercent =
     durationSeconds > 0 ? (currentTime / durationSeconds) * 100 : 0;
 
@@ -270,6 +306,46 @@ function VideoPlaybackSurface({
     }
   };
 
+  const handleQualityChange = (nextSourceUrl: string) => {
+    const video = videoRef.current;
+    if (!video || nextSourceUrl === selectedSourceUrl) {
+      return;
+    }
+
+    pendingSeekRef.current = video.currentTime;
+    shouldResumeAfterSourceChangeRef.current = !video.paused && !video.ended;
+    setSelectedSourceUrl(nextSourceUrl);
+    setShowChrome(true);
+    setIsBuffering(true);
+  };
+
+  const handleCaptionChange = (nextLang: string) => {
+    const video = videoRef.current;
+    setActiveCaptionLang(nextLang);
+
+    if (!video) {
+      return;
+    }
+
+    Array.from(video.textTracks).forEach((track) => {
+      track.mode = nextLang !== "off" && track.language === nextLang ? "showing" : "disabled";
+    });
+  };
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+
+    Array.from(video.textTracks).forEach((track) => {
+      track.mode =
+        activeCaptionLang !== "off" && track.language === activeCaptionLang
+          ? "showing"
+          : "disabled";
+    });
+  }, [activeCaptionLang, activeVideoUrl]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) {
@@ -312,7 +388,7 @@ function VideoPlaybackSurface({
 
   useEffect(() => clearHideTimer, []);
 
-  if (!videoUrl || !canShowVideo) {
+  if (!activeVideoUrl || !canShowVideo) {
     return (
       <div className="absolute inset-0 z-0 flex flex-col justify-between">
         <div className="pointer-events-none absolute inset-0 bg-black/45" />
@@ -359,7 +435,9 @@ function VideoPlaybackSurface({
     <div
       ref={containerRef}
       tabIndex={0}
-      className="group/player absolute inset-0 z-0 bg-black outline-none"
+      className="group/player absolute inset-0 z-0 select-none bg-black outline-none"
+      onContextMenu={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
       onMouseMove={registerInteraction}
       onMouseEnter={registerInteraction}
       onTouchStart={registerInteraction}
@@ -418,13 +496,34 @@ function VideoPlaybackSurface({
     >
       <video
         ref={videoRef}
-        key={videoUrl}
+        key={activeVideoUrl}
         playsInline
         preload="metadata"
         controls={false}
-        controlsList="nodownload"
-        className="absolute inset-0 h-full w-full object-cover"
-        onLoadedMetadata={syncTimeState}
+        controlsList="nodownload noremoteplayback noplaybackrate"
+        disablePictureInPicture
+        disableRemotePlayback
+        draggable={false}
+        className="absolute inset-0 h-full w-full bg-black object-contain"
+        onContextMenu={(event) => event.preventDefault()}
+        onLoadedMetadata={() => {
+          const video = videoRef.current;
+          if (video && pendingSeekRef.current !== null) {
+            video.currentTime = clamp(
+              pendingSeekRef.current,
+              0,
+              Number.isFinite(video.duration) ? video.duration : pendingSeekRef.current
+            );
+            pendingSeekRef.current = null;
+          }
+
+          syncTimeState();
+
+          if (video && shouldResumeAfterSourceChangeRef.current) {
+            shouldResumeAfterSourceChangeRef.current = false;
+            void video.play().catch(() => setShowChrome(true));
+          }
+        }}
         onDurationChange={syncTimeState}
         onTimeUpdate={syncTimeState}
         onProgress={syncBufferedProgress}
@@ -448,7 +547,7 @@ function VideoPlaybackSurface({
           setIsPlaying(false);
           setShowChrome(true);
         }}
-        onError={() => setFailedVideoUrl(videoUrl)}
+        onError={() => setFailedVideoKey(activeVideoKey)}
         onVolumeChange={() => {
           const video = videoRef.current;
           if (!video) {
@@ -465,7 +564,17 @@ function VideoPlaybackSurface({
           }
         }}
       >
-        <source src={videoUrl} type={videoMimeType ?? "video/mp4"} />
+        <source src={activeVideoUrl} type={activeVideoMimeType} />
+        {captionTracks?.map((track) => (
+          <track
+            key={`${track.srcLang}-${track.src}`}
+            kind="subtitles"
+            src={track.src}
+            srcLang={track.srcLang}
+            label={track.label}
+            default={track.default}
+          />
+        ))}
       </video>
 
       <div
@@ -475,9 +584,15 @@ function VideoPlaybackSurface({
         )}
       />
 
+      {watermark ? (
+        <div className="pointer-events-none absolute right-4 top-1/2 z-10 max-w-[70%] -translate-y-1/2 rotate-[-18deg] select-none text-right text-xs font-black uppercase tracking-[0.22em] text-white/12 sm:text-sm">
+          {watermark}
+        </div>
+      ) : null}
+
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 z-20 p-5 text-white transition-opacity duration-200 md:p-6",
+          "pointer-events-none absolute inset-x-0 top-0 z-20 p-4 text-white transition-opacity duration-200 sm:p-5 md:p-6",
           showChrome || !isPlaying ? "opacity-100" : "opacity-0"
         )}
       >
@@ -486,8 +601,8 @@ function VideoPlaybackSurface({
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/65">
               {moduleTitle}
             </p>
-            <h2 className="mt-2 text-2xl font-black md:text-4xl">{title}</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/80 md:text-base">
+            <h2 className="mt-2 line-clamp-2 text-lg font-black sm:text-2xl md:text-4xl">{title}</h2>
+            <p className="mt-3 hidden max-w-2xl text-sm leading-7 text-white/80 sm:block md:text-base">
               {summary}
             </p>
           </div>
@@ -530,12 +645,12 @@ function VideoPlaybackSurface({
 
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 z-30 p-4 transition-opacity duration-200 md:p-6",
+          "pointer-events-none absolute inset-x-0 bottom-0 z-30 p-2 transition-opacity duration-200 sm:p-4 md:p-6",
           showChrome || !isPlaying ? "opacity-100" : "opacity-0"
         )}
       >
         <div
-          className="pointer-events-auto rounded-[1.5rem] border border-white/10 bg-black/35 p-3 backdrop-blur-md md:p-4"
+          className="pointer-events-auto rounded-2xl border border-white/10 bg-black/40 p-2 backdrop-blur-md sm:p-3 md:p-4"
           onClick={stopInteractionPropagation}
           onPointerDown={stopInteractionPropagation}
           onTouchStart={stopInteractionPropagation}
@@ -570,7 +685,7 @@ function VideoPlaybackSurface({
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <PlayerIconButton
                 label={isPlaying ? "Pauza" : "Ijro etish"}
@@ -618,7 +733,7 @@ function VideoPlaybackSurface({
                 className="hidden h-2 w-24 cursor-pointer appearance-none rounded-full bg-white/15 accent-white md:block"
               />
 
-              <div className="ml-1 text-sm font-medium text-white/90">
+              <div className="ml-1 text-xs font-medium text-white/90 sm:text-sm">
                 {formatTime(currentTime)} / {formatTime(durationSeconds)}
               </div>
             </div>
@@ -648,6 +763,65 @@ function VideoPlaybackSurface({
                   ))}
                 </select>
               </label>
+
+              <label className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/80">
+                <span className="text-xs font-black uppercase tracking-[0.12em]">
+                  Quality
+                </span>
+                <select
+                  value={activeVideoUrl ?? ""}
+                  aria-label="Video sifati"
+                  onClick={stopInteractionPropagation}
+                  onPointerDown={stopInteractionPropagation}
+                  onChange={(event) => {
+                    registerInteraction();
+                    handleQualityChange(event.target.value);
+                  }}
+                  className="bg-transparent text-sm outline-none"
+                  disabled={normalizedSources.length <= 1}
+                >
+                  {normalizedSources.map((source) => (
+                    <option key={source.src} value={source.src} className="text-black">
+                      {source.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {captionTracks?.length ? (
+                <label className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/80">
+                  <Captions className="h-4 w-4" />
+                  <select
+                    value={activeCaptionLang}
+                    aria-label="Subtitr"
+                    onClick={stopInteractionPropagation}
+                    onPointerDown={stopInteractionPropagation}
+                    onChange={(event) => {
+                      registerInteraction();
+                      handleCaptionChange(event.target.value);
+                    }}
+                    className="bg-transparent text-sm outline-none"
+                  >
+                    <option value="off" className="text-black">
+                      Off
+                    </option>
+                    {captionTracks.map((track) => (
+                      <option
+                        key={`${track.srcLang}-${track.src}`}
+                        value={track.srcLang}
+                        className="text-black"
+                      >
+                        {track.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/45">
+                  <Captions className="h-4 w-4" />
+                  No CC
+                </span>
+              )}
 
               <PlayerIconButton
                 label={isFullscreen ? "Fullscreen'dan chiqish" : "Fullscreen"}
@@ -684,11 +858,15 @@ export default function CourseLessonPlayer({
   helperText,
   videoUrl,
   videoMimeType,
+  videoSources,
+  captionTracks,
   uploadFilePath,
+  watermark,
 }: LessonPlayerProps) {
   return (
     <div
-      className={`relative aspect-video w-full overflow-hidden bg-gradient-to-br ${heroGradient}`}
+      className={`relative aspect-video min-h-[220px] w-full overflow-hidden bg-gradient-to-br sm:min-h-0 ${heroGradient}`}
+      onContextMenu={(event) => event.preventDefault()}
     >
       {videoUrl ? (
         <VideoPlaybackSurface
@@ -701,6 +879,9 @@ export default function CourseLessonPlayer({
           helperText={helperText}
           videoUrl={videoUrl}
           videoMimeType={videoMimeType}
+          videoSources={videoSources}
+          captionTracks={captionTracks}
+          watermark={watermark}
         />
       ) : (
         <div className="absolute inset-0 z-0 flex flex-col justify-between">

@@ -1,15 +1,22 @@
 import Link from "next/link";
 import { Mail, MapPin, Phone, Send } from "lucide-react";
 import Footer from "@/components/Footer";
-import { companyContact } from "@/lib/site";
+import { getCompanyContactData, getOfficeLocationsData } from "@/lib/content-store";
 import { submitContactForm } from "./actions";
 
 interface ContactPageProps {
   searchParams: Promise<{ sent?: string; error?: string }>;
 }
 
+export const revalidate = 300;
+
 export default async function ContactPage({ searchParams }: ContactPageProps) {
   const { sent, error } = await searchParams;
+  const [companyContact, officeLocations] = await Promise.all([
+    getCompanyContactData(),
+    getOfficeLocationsData(),
+  ]);
+  const primaryOffice = officeLocations[0];
 
   return (
     <>
@@ -66,7 +73,10 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
                 {
                   icon: MapPin,
                   label: "Manzil",
-                  value: "Toshkent, Mirzo Ulug'bek tumani",
+                  value:
+                    primaryOffice?.address && primaryOffice?.city
+                      ? `${primaryOffice.address}, ${primaryOffice.city}`
+                      : "Toshkent, Mirzo Ulug'bek tumani",
                   href: "/offices",
                 },
               ].map((item) => (

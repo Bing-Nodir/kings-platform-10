@@ -3,8 +3,10 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import NavbarConditional from "@/components/NavbarConditional";
 import ThemeToggle from "@/components/ThemeToggle";
+import ResilientBoundary from "@/components/ResilientBoundary";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { WishlistProvider } from "@/components/WishlistProvider";
+import { LAST_DARK_THEME_STORAGE_KEY, THEME_STORAGE_KEY } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Kings Education",
@@ -22,7 +24,7 @@ export default function RootLayout({
         {/* Dark mode init: prevents flash of wrong theme on load */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})()`,
+            __html: `(function(){try{var root=document.documentElement;var t=localStorage.getItem('${THEME_STORAGE_KEY}')||'midnight';var resolved='midnight';if(t==='midnight'){resolved='midnight';localStorage.setItem('${LAST_DARK_THEME_STORAGE_KEY}','midnight');}else if(t==='dark'){resolved='dark';localStorage.setItem('${LAST_DARK_THEME_STORAGE_KEY}','dark');}else if(t==='light'){resolved='light';}else if(t==='system'){resolved=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}root.classList.toggle('dark',resolved!=='light');root.dataset.theme=resolved;}catch(e){}})()`,
           }}
         />
       </head>
@@ -32,7 +34,9 @@ export default function RootLayout({
             <NavbarConditional>
               <Navbar />
             </NavbarConditional>
-            <div className="pb-24 sm:pb-0">{children}</div>
+            <ResilientBoundary label="Asosiy platforma moduli">
+              <div className="pb-24 sm:pb-0">{children}</div>
+            </ResilientBoundary>
             <ThemeToggle />
           </WishlistProvider>
         </LanguageProvider>

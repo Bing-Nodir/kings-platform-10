@@ -1,54 +1,28 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ArrowRight, Building2, MapPinned, Sparkles, Trophy, Users2 } from "lucide-react";
-import Footer from "@/components/Footer";
 import CourseCard from "@/components/CourseCard";
+import Footer from "@/components/Footer";
+import MapSection from "@/components/MapSection";
+import RoadmapSection from "@/components/RoadmapSection";
 import { LampDemo } from "@/components/ui/lamp";
 import { GlowyWavesHero } from "@/components/ui/glowy-waves-hero";
 import { LogoCloud } from "@/components/ui/logo-cloud-3";
-import MapSection from "@/components/MapSection";
-import { courses } from "@/lib/catalog";
+import {
+  getCoursesData,
+  getHomeEcosystemCardsData,
+  getHomepageStatsData,
+} from "@/lib/content-store";
 import { getSiteContent } from "@/lib/site-content";
-import { mentorProfiles } from "@/lib/site";
-import RoadmapSection from "@/components/RoadmapSection";
-import { createClient } from "@/utils/supabase/server";
 
-const ecosystemCards = [
-  {
-    title: "Biz haqimizda",
-    description:
-      "Jamoa, learning model va platforma yondashuvini ko\u2019ring.",
-    href: "/about",
-    icon: Sparkles,
-  },
-  {
-    title: "Subscription",
-    description:
-      "Bepul preview, pro access va offline formatlar orasidan mos modelni tanlang.",
-    href: "/subscription",
-    icon: Users2,
-  },
-  {
-    title: "Korporativ ta\u2018lim",
-    description:
-      "Jamoangizni professional darajaga yetkazing. Analytics, AI Mentor va guruh sertifikatlari.",
-    href: "/business",
-    icon: Building2,
-  },
-  {
-    title: "Ofislar xaritasi",
-    description:
-      "Kampuslar, QR attendance va oflayn workshop nuqtalarini xaritada ko\u2019ring.",
-    href: "/offices",
-    icon: MapPinned,
-  },
-  {
-    title: "Reyting jadvali",
-    description:
-      "O\u2018rganish vaqti, quiz natijalari va streak bo\u2018yicha top o\u2018quvchilarni ko\u2018ring.",
-    href: "/leaderboard",
-    icon: Trophy,
-  },
-];
+export const revalidate = 300;
+
+const ecosystemIcons = {
+  Sparkles,
+  Users2,
+  Building2,
+  MapPinned,
+  Trophy,
+} as const;
 
 const logos = [
   { src: "https://cdn.simpleicons.org/nvidia/000000", alt: "Nvidia Logo" },
@@ -64,51 +38,19 @@ const logos = [
   { src: "https://cdn.simpleicons.org/react/000000", alt: "React Logo" },
 ];
 
-// Catalog-dan haqiqiy statistika
-const catalogStudentTotal = courses.reduce((sum, c) => sum + c.students, 0);
-
 export default async function Home() {
-  const supabase = await createClient();
-  const siteContent = await getSiteContent();
-
-  let studentCount: number | null = null;
-  let courseCount: number | null = null;
-
-  try {
-    const [profilesResult, coursesResult] = await Promise.all([
-      supabase.from("profiles").select("*", { count: "exact", head: true }),
-      supabase.from("courses").select("*", { count: "exact", head: true }),
-    ]);
-
-    studentCount = profilesResult.error ? null : profilesResult.count;
-    courseCount = coursesResult.error ? null : coursesResult.count;
-  } catch {
-    // Supabase sozlanmagan - catalog ma'lumotlaridan foydalanamiz
-  }
-
-  const realStats = [
-    {
-      label: "Faol O'quvchilar",
-      value: studentCount
-        ? `${studentCount.toLocaleString()}+`
-        : `${catalogStudentTotal.toLocaleString()}+`,
-    },
-    {
-      label: "Flagship Kurslar",
-      value: courseCount ? `${courseCount}` : `${courses.length}`,
-    },
-    {
-      label: "Core Mentorlar",
-      value: `${mentorProfiles.length}`,
-    },
-  ];
+  const [siteContent, courses, ecosystemCards, homepageStats] = await Promise.all([
+    getSiteContent(),
+    getCoursesData(),
+    getHomeEcosystemCardsData(),
+    getHomepageStatsData(),
+  ]);
 
   return (
     <main className="flex min-h-screen flex-col">
-      {/* Hero - light/dark mode */}
       <div className="block dark:hidden">
         <GlowyWavesHero
-          stats={realStats}
+          stats={homepageStats}
           badgeText={siteContent.homeHeroBadge}
           titlePrefix={siteContent.homeHeroLightTitlePrefix}
           titleHighlight={siteContent.homeHeroLightTitleHighlight}
@@ -117,16 +59,14 @@ export default async function Home() {
       </div>
       <div className="hidden dark:block">
         <LampDemo
-          stats={realStats}
+          stats={homepageStats}
           title={siteContent.homeHeroDarkTitle}
           description={siteContent.homeHeroDescription}
         />
       </div>
 
-      {/* Roadmap / Ecosystem diagram */}
       <RoadmapSection />
 
-      {/* Kurslar carousel */}
       <section className="cv-auto overflow-hidden bg-gray-50/50 py-16 dark:bg-gray-950/50 md:py-24">
         <div className="container mx-auto px-4 md:px-8">
           <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -149,7 +89,6 @@ export default async function Home() {
             </Link>
           </div>
 
-          {/* Horizontal scroll carousel */}
           <div className="flex snap-x snap-mandatory gap-6 overflow-x-auto pb-8 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {courses.map((course) => (
               <div
@@ -172,7 +111,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Ecosystem section */}
       <section className="cv-auto bg-white py-16 dark:bg-black md:py-24">
         <div className="container mx-auto px-4 md:px-8">
           <div className="mb-10 max-w-3xl">
@@ -188,34 +126,38 @@ export default async function Home() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {ecosystemCards.map((card) => (
-              <Link
-                key={card.title}
-                href={card.href}
-                className="group rounded-[2rem] border border-gray-200 bg-gray-50 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:bg-white hover:shadow-[0_10px_40px_-10px_rgba(37,99,235,0.15)] dark:border-gray-800 dark:bg-gray-950 dark:hover:border-blue-500/50 dark:hover:bg-gray-900 dark:hover:shadow-[0_0_40px_-10px_rgba(59,130,246,0.3)]"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/40">
-                  <card.icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <h3 className="mt-5 text-2xl font-black text-gray-950 dark:text-white">
-                  {card.title}
-                </h3>
-                <p className="mt-3 text-sm leading-7 text-gray-600 dark:text-gray-400">
-                  {card.description}
-                </p>
-                <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
-                  Ochish{" "}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </span>
-              </Link>
-            ))}
+            {ecosystemCards.map((card) => {
+              const Icon =
+                ecosystemIcons[card.iconKey as keyof typeof ecosystemIcons] ?? Sparkles;
+
+              return (
+                <Link
+                  key={card.title}
+                  href={card.href}
+                  className="group rounded-[2rem] border border-gray-200 bg-gray-50 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:bg-white hover:shadow-[0_10px_40px_-10px_rgba(37,99,235,0.15)] dark:border-gray-800 dark:bg-gray-950 dark:hover:border-blue-500/50 dark:hover:bg-gray-900 dark:hover:shadow-[0_0_40px_-10px_rgba(59,130,246,0.3)]"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/40">
+                    <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="mt-5 text-2xl font-black text-gray-950 dark:text-white">
+                    {card.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-7 text-gray-600 dark:text-gray-400">
+                    {card.description}
+                  </p>
+                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    Ochish{" "}
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
       <MapSection />
 
-      {/* Hamkor logotiplar */}
       <section className="cv-auto relative border-t border-gray-200 bg-white py-16 dark:border-gray-800 dark:bg-black md:py-24">
         <div className="mx-auto max-w-4xl px-4 text-center">
           <h2 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white md:text-5xl">

@@ -1,23 +1,18 @@
 import { NextResponse } from "next/server";
-import { getCourseById } from "@/lib/catalog";
+import { getCourseByIdData } from "@/lib/content-store";
+import {
+  quizSubmitRequestSchema,
+  quizSubmitResponseSchema,
+} from "@/lib/server/api-schemas";
 import { getAuthenticatedContext, hasCourseEnrollment } from "@/lib/server/auth";
+import {
+  checkRateLimit,
+  getRateLimitKey,
+  rateLimitResponse,
+} from "@/lib/server/rate-limit";
 import { clampNumber, normalizeSingleLine } from "@/lib/server/validation";
 import { getQuizByCourseId } from "@/lib/quizzes";
-
-function normalizeAnswers(answers: unknown) {
-  if (!Array.isArray(answers)) {
-    return [];
-  }
-
-  return answers
-    .filter((answer) => answer && typeof answer === "object")
-    .map((answer) => {
-      const qId = "qId" in answer ? normalizeSingleLine(answer.qId, 64) : "";
-      const ans = "ans" in answer ? normalizeSingleLine(answer.ans, 8) : "";
-      return { qId, ans };
-    })
-    .filter((answer) => answer.qId && answer.ans);
-}
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -27,7 +22,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "courseId kerak" }, { status: 400 });
   }
 
-  if (!getCourseById(courseId) || !getQuizByCourseId(courseId)) {
+  if (!(await getCourseByIdData(courseId)) || !getQuizByCourseId(courseId)) {
     return NextResponse.json({ error: "Kurs topilmadi" }, { status: 404 });
   }
 
@@ -64,17 +59,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Tizimga kiring" }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => null)) as {
-    courseId?: string;
-    answers?: unknown[];
-  } | null;
-  const courseId = normalizeSingleLine(body?.courseId, 120);
+  const rateLimit = checkRateLimit(getRateLimitKey(request, "quiz-submit", user.id), {
+    limit: 40,
+    windowMs: 10 * 60 * 1000,
+  });
 
-  if (!courseId) {
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(
+      rateLimit,
+      "Quiz javoblari juda tez yuborilyapti. Birozdan keyin qayta urinib ko'ring."
+    );
+  }
+
+  const parsedBody = quizSubmitRequestSchema.safeParse(
+    await request.json().catch(() => null)
+  );
+
+  if (!parsedBody.success) {
     return NextResponse.json({ error: "Noto'g'ri ma'lumotlar" }, { status: 400 });
   }
 
-  if (!getCourseById(courseId)) {
+  const { courseId, lessonId } = parsedBody.data;
+
+  if (!(await getCourseByIdData(courseId))) {
     return NextResponse.json({ error: "Kurs topilmadi" }, { status: 404 });
   }
 
@@ -87,10 +94,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Quiz topilmadi" }, { status: 404 });
   }
 
-  const normalizedAnswers = normalizeAnswers(body?.answers).slice(
-    0,
-    quiz.questions.length
-  );
+  const normalizedAnswers = parsedBody.data.answers.slice(0, quiz.questions.length);
   const answersByQuestion = Object.fromEntries(
     normalizedAnswers.map((answer) => [answer.qId, answer.ans])
   );
@@ -101,9 +105,11 @@ export async function POST(request: Request) {
   const percent = clampNumber(Math.round((score / total) * 100), 0, 100);
   const passed = percent >= quiz.passingScore;
 
-  const { error } = await supabase.from("quiz_attempts").insert({
+  const admin = createAdminClient();
+  const { error } = await admin.from("quiz_attempts").insert({
     user_id: user.id,
     course_id: courseId,
+    lesson_id: lessonId || null,
     score,
     total,
     percent,
@@ -115,5 +121,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  const award = await supabase.rpc("award_quiz_knowledge_points", {
+    p_course_id: courseId,
+    p_lesson_id: lessonId || null,
+    p_percent: percent,
+    p_passed: passed,
+  });
+
+  const awardPayload = (award.data ?? {}) as { xpAwarded?: number };
+
+  return NextResponse.json(
+    quizSubmitResponseSchema.parse({
+      ok: true,
+      percent,
+      passed,
+      xpAwarded: awardPayload.xpAwarded ?? 0,
+    })
+  );
 }

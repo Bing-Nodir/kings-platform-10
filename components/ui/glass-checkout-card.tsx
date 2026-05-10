@@ -1,6 +1,7 @@
 "use client";
 
 import { createOrder } from "@/app/checkout/actions";
+import { PaymentLogo } from "@/components/PaymentLogos";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,7 @@ function SubmitButton({ amount }: { amount: number }) {
       disabled={pending}
       className="mt-8 h-12 w-full rounded-xl bg-blue-600 text-base font-bold text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] hover:bg-blue-700 hover:shadow-blue-500/40 disabled:cursor-not-allowed disabled:opacity-70"
     >
-      {pending ? "Tasdiqlanmoqda..." : `${amount.toLocaleString()} UZS To'lash`}
+      {pending ? "Yaratilmoqda..." : `${amount.toLocaleString()} UZS To'lovni boshlash`}
     </Button>
   );
 }
@@ -56,7 +57,7 @@ export function GlassCheckoutCard({
               To&apos;lov ma&apos;lumotlari
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Xaridingizni xavfsiz amalga oshiring
+              Pending va confirmation bosqichlari bilan xavfsiz checkout
             </p>
           </div>
 
@@ -75,7 +76,7 @@ export function GlassCheckoutCard({
             </div>
 
             <div className="mb-6 grid grid-cols-3 gap-3">
-              {["card", "payme", "click"].map((method) => (
+              {(["card", "payme", "click"] as const).map((method) => (
                 <button
                   key={method}
                   type="button"
@@ -86,9 +87,15 @@ export function GlassCheckoutCard({
                       "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400"
                   )}
                 >
-                  {method === "card" && <CreditCard className="h-5 w-5" />}
-                  {method === "payme" && <span>Payme</span>}
-                  {method === "click" && <span>Click</span>}
+                  <PaymentLogo
+                    brand={method}
+                    compact={method === "card"}
+                    className={
+                      method === "card"
+                        ? "text-current"
+                        : "h-7 w-[84px] rounded-lg"
+                    }
+                  />
                 </button>
               ))}
             </div>
@@ -184,8 +191,8 @@ export function GlassCheckoutCard({
               ) : (
                 <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-4 text-sm text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
                   {paymentMethod === "payme"
-                    ? "Payme orqali davom etish uchun buyurtma tasdiqlang. Access avtomatik ochiladi."
-                    : "Click orqali davom etish uchun buyurtma tasdiqlang. Access avtomatik ochiladi."}
+                    ? "Payme uchun payment intent yaratiladi, tasdiq kelgach access ochiladi."
+                    : "Click uchun payment intent yaratiladi, tasdiq kelgach access ochiladi."}
                 </div>
               )}
             </div>
@@ -194,7 +201,7 @@ export function GlassCheckoutCard({
 
             <p className="mt-5 flex items-center justify-center text-xs font-medium text-muted-foreground">
               <Lock className="mr-1.5 h-3.5 w-3.5 text-green-500" />
-              To&apos;lovlar 100% xavfsiz va shifrlangan
+              To&apos;lov oqimi audit qilinadi, ma&apos;lumotlar shifrlangan
             </p>
           </form>
         </div>

@@ -7,7 +7,7 @@ export interface Profile {
   bio: string | null
   company_name: string | null
   language_pref: 'uz' | 'ru' | 'en'
-  role: 'student' | 'admin' | null
+  role: 'student' | 'instructor' | 'admin' | null
   created_at: string
 }
 

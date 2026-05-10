@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import { ArrowRight, BookmarkCheck } from "lucide-react";
-import { courses } from "@/lib/catalog";
+import type { Course } from "@/lib/catalog";
 import { useWishlist } from "@/components/WishlistProvider";
 
-export default function SavedCoursesShelf() {
+interface SavedCoursesShelfProps {
+  courses: Course[];
+}
+
+export default function SavedCoursesShelf({ courses }: SavedCoursesShelfProps) {
   const { courseIds, isAuthenticated, loading, backendReady } = useWishlist();
 
   if (loading || !isAuthenticated || !backendReady) {

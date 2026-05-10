@@ -2,8 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 import { GlassCheckoutCard } from "@/components/ui/glass-checkout-card";
+import { getCourseByIdData, getProductByIdData } from "@/lib/content-store";
+import {
+  applyPricingPenalty,
+  getStudentReputation,
+} from "@/lib/server/student-reputation";
 import { createClient } from "@/utils/supabase/server";
-import { getCourseById, getProductById } from "@/lib/catalog";
 
 interface CheckoutPageProps {
   searchParams: Promise<{ type?: string; id?: string; error?: string }>;
@@ -19,8 +23,8 @@ export default async function CheckoutPage({
     redirect(itemType === "product" ? "/shop" : "/courses");
   }
 
-  const course = itemType === "course" ? getCourseById(id) : null;
-  const product = itemType === "product" ? getProductById(id) : null;
+  const course = itemType === "course" ? await getCourseByIdData(id) : null;
+  const product = itemType === "product" ? await getProductByIdData(id) : null;
   const item = course ?? product;
 
   if (!item) {
@@ -31,6 +35,19 @@ export default async function CheckoutPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    const redirectTarget = `/checkout?type=${itemType}&id=${encodeURIComponent(item.id)}`;
+    const params = new URLSearchParams({
+      redirect: redirectTarget,
+      message:
+        itemType === "course"
+          ? "Kursga yozilish uchun avval tizimga kiring."
+          : "Xarid qilish uchun avval tizimga kiring.",
+    });
+
+    redirect(`/login?${params.toString()}`);
+  }
 
   if (user && itemType === "course") {
     const { data: enrollment } = await supabase
@@ -45,27 +62,39 @@ export default async function CheckoutPage({
     }
   }
 
+  const baseAmount = item.price;
+  let checkoutAmount = baseAmount;
+  let creditScore: number | null = null;
+  let pricingPenaltyPercent = 0;
+
+  if (user && itemType === "course") {
+    const reputation = await getStudentReputation(user.id, supabase);
+    creditScore = reputation.creditScore;
+    pricingPenaltyPercent = reputation.pricingPenaltyPercent;
+    checkoutAmount = applyPricingPenalty(baseAmount, pricingPenaltyPercent);
+  }
+
   const itemTitle = course ? course.title : product!.name;
   const backHref = itemType === "course" ? `/courses/${item.id}` : "/shop";
   const bulletPoints =
     itemType === "course"
       ? [
-          "Kursga to'lov tasdiqlangach darhol access ochiladi",
-          "Dashboard va AI Mentor bilan o'qishni boshlaysiz",
-          "Mentor feedback, resurslar va sertifikat flow qo'shiladi",
+          "Payment intent yaratiladi va provider tasdig'idan keyin access ochiladi",
+          "Tasdiqlangan to'lovdan keyin dashboard va AI Mentor faol bo'ladi",
+          "Enrollment endi faqat confirmed payment holatida beriladi",
         ]
       : [
-          "Mahsulot xaridi darhol hisobingizga biriktiriladi",
-          "Shablon, pack yoki resursni shop ichidan boshqarasiz",
-          "To'lov muvaffaqiyatli bo'lsa dashboard yangilanadi",
+          "Mahsulot uchun pending order va payment lifecycle yaratiladi",
+          "Provider tasdiqlaganidan keyin billing tarixi yangilanadi",
+          "Strong backend audit orqali payment holati kuzatiladi",
         ];
   const errorMessage =
     error === "missing_fields"
       ? "Iltimos, checkout maydonlarini to'liq to'ldiring."
       : error === "backend_setup_required"
-        ? "Supabase policy yoki migration'lar hali to'liq ishga tushmagan. `supabase/migrations/20260318_backend_repair.sql` ni SQL Editor'da ishga tushiring."
-        : error === "enrollment_failed"
-          ? "Buyurtma yaratildi, lekin kurs access'ini ochishda muammo bo'ldi. Iltimos, qayta urinib ko'ring."
+        ? "Payment orchestration migrationlari hali ishga tushmagan. `supabase/migrations/20260321_payment_orchestration_phase3.sql` va avvalgi backend migrationlarni SQL Editor'da ishga tushiring."
+        : error === "payment_intent_failed"
+          ? "Buyurtma yaratildi, lekin payment intent tayyorlashda muammo bo'ldi. Iltimos, qayta urinib ko'ring."
           : error === "order_failed"
             ? "Buyurtmani saqlashda muammo yuz berdi. Iltimos, qayta urinib ko'ring."
             : null;
@@ -96,10 +125,10 @@ export default async function CheckoutPage({
 
             <div className="space-y-4">
               <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white md:text-5xl">
-                Buyurtmani tasdiqlang va access&apos;ni faollashtiring
+                Payment oqimini boshlang va access&apos;ni xavfsiz faollashtiring
               </h1>
               <p className="max-w-xl text-lg text-gray-600 dark:text-gray-400">
-                Kings Education ekotizimiga qo&apos;shilayotganingiz bilan tabriklaymiz. To&apos;lov yakunlangach access avtomatik ravishda profilingizga ulanadi.
+                Kings Education ekotizimiga qo&apos;shilayotganingiz bilan tabriklaymiz. Endi checkout pending, confirmation va fulfillment bosqichlari bilan kuchliroq backend orqali yuradi.
               </p>
             </div>
 
@@ -128,15 +157,23 @@ export default async function CheckoutPage({
               <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 text-lg font-bold dark:border-gray-800">
                 <span>Jami:</span>
                 <span className="text-blue-600 dark:text-blue-400">
-                  {item.price.toLocaleString()} UZS
+                  {checkoutAmount.toLocaleString()} UZS
                 </span>
               </div>
+
+              {pricingPenaltyPercent > 0 ? (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                  Credit score {creditScore ?? 0}/100 bo'lgani uchun kurs
+                  narxiga {pricingPenaltyPercent}% intizom penalty qo'shildi.
+                  Asosiy narx: {baseAmount.toLocaleString()} UZS.
+                </div>
+              ) : null}
             </div>
           </div>
 
           <div className="flex justify-center lg:justify-end">
             <GlassCheckoutCard
-              amount={item.price}
+              amount={checkoutAmount}
               itemId={item.id}
               itemType={itemType}
               itemTitle={itemTitle}

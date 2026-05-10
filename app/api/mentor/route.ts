@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { getCourseById } from "@/lib/catalog";
+import { getCourseByIdData } from "@/lib/content-store";
 import { getAuthenticatedContext, hasCourseEnrollment } from "@/lib/server/auth";
 import { getAnthropicConfig, hasConfiguredAnthropicKey } from "@/lib/server/env";
 import {
@@ -7,12 +7,29 @@ import {
   normalizeSingleLine,
   sanitizeChatHistory,
 } from "@/lib/server/validation";
+import {
+  checkRateLimit,
+  getRateLimitKey,
+  rateLimitResponse,
+} from "@/lib/server/rate-limit";
 
 export async function POST(req: Request) {
   const { supabase, user } = await getAuthenticatedContext();
 
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  const rateLimit = checkRateLimit(getRateLimitKey(req, "mentor", user.id), {
+    limit: 20,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(
+      rateLimit,
+      "AI Mentor so'rovlari limiti oshib ketdi. Bir daqiqadan keyin qayta urinib ko'ring."
+    );
   }
 
   const { apiKey, model } = getAnthropicConfig();
@@ -38,7 +55,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Kurs identifikatori topilmadi." }, { status: 400 });
   }
 
-  const course = getCourseById(courseId);
+  const course = await getCourseByIdData(courseId);
   if (!course) {
     return Response.json({ error: "Kurs topilmadi." }, { status: 404 });
   }

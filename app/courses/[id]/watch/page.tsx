@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, BarChart3, Lock, MessageSquare, PlayCircle } from "lucide-react";
+import { getCourseByIdData } from "@/lib/content-store";
 import { createClient } from "@/utils/supabase/server";
-import { getCourseById, getCoursePreviewLessons } from "@/lib/catalog";
+import { getCoursePreviewLessons } from "@/lib/catalog";
 import { resolveLessonMedia } from "@/lib/server/course-media";
+import { getSignedCourseAssetMedia } from "@/lib/server/course-private-media";
 import WatchClient from "./WatchClient";
 
 interface CourseWatchPageProps {
@@ -17,7 +19,7 @@ export default async function CourseWatchPage({
 }: CourseWatchPageProps) {
   const { id } = await params;
   const { lesson } = await searchParams;
-  const course = getCourseById(id);
+  const course = await getCourseByIdData(id);
 
   if (!course) {
     notFound();
@@ -31,23 +33,6 @@ export default async function CourseWatchPage({
     notFound();
   }
 
-  const courseWithResolvedMedia = {
-    ...course,
-    modules: course.modules.map((module) => ({
-      ...module,
-      lessons: module.lessons.map((lesson) => {
-        const media = resolveLessonMedia(course.id, lesson.id);
-
-        return {
-          ...lesson,
-          videoUrl: media.isUploaded ? media.videoUrl : undefined,
-          videoMimeType: media.isUploaded ? media.videoMimeType : undefined,
-          uploadFilePath: media.uploadFilePath,
-        };
-      }),
-    })),
-  };
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -56,6 +41,7 @@ export default async function CourseWatchPage({
   let progressPercent = 0;
   let isEnrolled = false;
   let lastLessonId: string | null = null;
+  let viewerWatermark = "Preview access";
 
   if (user) {
     const { data: enrollment } = await supabase
@@ -70,11 +56,59 @@ export default async function CourseWatchPage({
       progressPercent = enrollment.progress_percent ?? 0;
       lastLessonId = enrollment.last_lesson_id ?? null;
     }
+
+    viewerWatermark = `${user.email ?? user.id} | ${course.id}`;
   }
 
   if (!isEnrolled && lesson && !previewLessonIds.includes(lesson)) {
     redirect(`/checkout?type=course&id=${course.id}`);
   }
+
+  const signedAssetMedia = isEnrolled
+    ? await getSignedCourseAssetMedia(course.id)
+    : new Map();
+  const courseWithResolvedMedia = {
+    ...course,
+    modules: course.modules.map((module) => ({
+      ...module,
+      lessons: module.lessons.map((lesson) => {
+        const media = resolveLessonMedia(course.id, lesson.id);
+        const privateMedia = signedAssetMedia.get(lesson.id);
+        const lessonVideoUrl = lesson.videoUrl?.trim();
+        const selectedVideoUrl =
+          privateMedia?.videoUrl ||
+          lessonVideoUrl ||
+          (media.isUploaded ? media.videoUrl : undefined);
+
+        return {
+          ...lesson,
+          videoUrl: selectedVideoUrl,
+          videoMimeType:
+            privateMedia?.videoMimeType ??
+            (lessonVideoUrl
+              ? lesson.videoMimeType
+              : media.isUploaded
+                ? media.videoMimeType
+                : undefined),
+          uploadFilePath: lessonVideoUrl
+            ? lesson.uploadFilePath
+            : media.uploadFilePath,
+          videoSources:
+            privateMedia?.videoSources ??
+            (lessonVideoUrl
+              ? lesson.videoSources ?? [
+                  {
+                    label: "Source",
+                    src: lessonVideoUrl,
+                    mimeType: lesson.videoMimeType,
+                  },
+                ]
+              : media.videoSources),
+          captionTracks: lesson.captionTracks ?? media.captionTracks,
+        };
+      }),
+    })),
+  };
 
   const initialLessonId = isEnrolled
     ? lesson ?? lastLessonId ?? course.modules[0]?.lessons[0]?.id ?? fallbackLessonId
@@ -138,6 +172,7 @@ export default async function CourseWatchPage({
         isEnrolled={isEnrolled}
         canUseMentor={Boolean(user && isEnrolled)}
         checkoutHref={`/checkout?type=course&id=${course.id}`}
+        viewerWatermark={viewerWatermark}
       />
     </div>
   );

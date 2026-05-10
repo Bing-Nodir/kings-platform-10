@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCourseById } from "@/lib/catalog";
+import { getCourseByIdData } from "@/lib/content-store";
 import { getAuthenticatedContext } from "@/lib/server/auth";
 import { normalizeSingleLine } from "@/lib/server/validation";
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { courseId?: string } | null;
   const courseId = normalizeSingleLine(body?.courseId, 120);
 
-  if (!courseId || !getCourseById(courseId)) {
+  if (!courseId || !(await getCourseByIdData(courseId))) {
     return NextResponse.json({ error: "Course not found" }, { status: 404 });
   }
 

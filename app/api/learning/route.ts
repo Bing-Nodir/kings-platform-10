@@ -1,6 +1,16 @@
 import { revalidatePath } from "next/cache";
+import { getCourseByIdData } from "@/lib/content-store";
+import {
+  jsonFromSchema,
+  learningProgressRequestSchema,
+  learningProgressResponseSchema,
+} from "@/lib/server/api-schemas";
+import {
+  checkRateLimit,
+  getRateLimitKey,
+  rateLimitResponse,
+} from "@/lib/server/rate-limit";
 import { createClient } from "@/utils/supabase/server";
-import { getCourseById } from "@/lib/catalog";
 
 function errorMentions(
   error: { message?: string; details?: string; hint?: string } | null,
@@ -23,25 +33,41 @@ export async function POST(req: Request) {
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = user.id;
 
-  const body = (await req.json().catch(() => null)) as
-    | { courseId?: string; lessonId?: string; durationMinutes?: number }
-    | null;
+  const rateLimit = checkRateLimit(
+    getRateLimitKey(req, "learning-progress", userId),
+    {
+      limit: 180,
+      windowMs: 10 * 60 * 1000,
+    }
+  );
 
-  const courseId = body?.courseId?.trim();
-  const lessonId = body?.lessonId?.trim();
-  const durationMinutes = Number.isFinite(body?.durationMinutes)
-    ? Math.max(0, Math.min(Math.round(body?.durationMinutes ?? 0), 240))
-    : 0;
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(
+      rateLimit,
+      "Progress juda tez-tez yuborilyapti. Birozdan keyin davom eting."
+    );
+  }
 
-  if (!courseId || !lessonId) {
+  const parsedBody = learningProgressRequestSchema.safeParse(
+    await req.json().catch(() => null)
+  );
+
+  if (!parsedBody.success) {
     return Response.json(
       { error: "Kurs yoki dars identifikatori topilmadi." },
       { status: 400 }
     );
   }
 
-  const course = getCourseById(courseId);
+  const { courseId, lessonId } = parsedBody.data;
+  const durationMinutes = Math.max(
+    0,
+    Math.min(Math.round(parsedBody.data.durationMinutes ?? 0), 240)
+  );
+
+  const course = await getCourseByIdData(courseId);
   if (!course) {
     return Response.json({ error: "Kurs topilmadi." }, { status: 404 });
   }
@@ -53,10 +79,14 @@ export async function POST(req: Request) {
     return Response.json({ error: "Dars topilmadi." }, { status: 404 });
   }
 
+  const previousLessonId =
+    parsedBody.data.previousLessonId ?? allLessons[lessonIndex - 1]?.id ?? null;
+  const totalLessons = parsedBody.data.totalLessons ?? allLessons.length;
+
   const { data: enrollment } = await supabase
     .from("enrollments")
     .select("id, progress_percent, completed_at")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("course_id", courseId)
     .maybeSingle();
 
@@ -67,50 +97,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const now = new Date().toISOString();
-  const calculatedProgress = Math.round(
-    ((lessonIndex + 1) / Math.max(allLessons.length, 1)) * 100
-  );
-  const progressPercent = Math.max(
-    enrollment.progress_percent ?? 0,
-    calculatedProgress
-  );
-  const completedAt =
-    progressPercent >= 100 ? enrollment.completed_at ?? now : null;
+  async function recordSessionIfNeeded() {
+    if (durationMinutes <= 0) {
+      return;
+    }
 
-  let { error: updateError } = await supabase
-    .from("enrollments")
-    .update({
-      progress_percent: progressPercent,
-      last_lesson_id: lessonId,
-      last_accessed_at: now,
-      completed_at: completedAt,
-    })
-    .eq("id", enrollment.id);
-
-  if (updateError && errorMentions(updateError, "last_lesson_id")) {
-    const fallbackResult = await supabase
-      .from("enrollments")
-      .update({
-        progress_percent: progressPercent,
-        last_accessed_at: now,
-        completed_at: completedAt,
-      })
-      .eq("id", enrollment.id);
-
-    updateError = fallbackResult.error;
-  }
-
-  if (updateError) {
-    return Response.json(
-      { error: "Progressni saqlashda muammo yuz berdi." },
-      { status: 500 }
-    );
-  }
-
-  if (durationMinutes > 0) {
     let { error: sessionError } = await supabase.from("learning_sessions").insert({
-      user_id: user.id,
+      user_id: userId,
       course_id: courseId,
       lesson_id: lessonId,
       duration_minutes: durationMinutes,
@@ -118,7 +111,7 @@ export async function POST(req: Request) {
 
     if (sessionError && errorMentions(sessionError, "lesson_id")) {
       const fallbackSession = await supabase.from("learning_sessions").insert({
-        user_id: user.id,
+        user_id: userId,
         course_id: courseId,
         duration_minutes: durationMinutes,
       });
@@ -131,17 +124,92 @@ export async function POST(req: Request) {
     }
   }
 
-  if (completedAt) {
-    const { error: certificateError } = await supabase
-      .from("certificates")
-      .upsert(
+  if (!parsedBody.data.markComplete) {
+    await recordSessionIfNeeded();
+
+    return jsonFromSchema(learningProgressResponseSchema, {
+      progressPercent: enrollment.progress_percent ?? 0,
+      completedLessons: Math.floor(
+        ((enrollment.progress_percent ?? 0) / 100) * totalLessons
+      ),
+      xpAwarded: 0,
+    });
+  }
+
+  const masteryResult = await supabase.rpc("record_lesson_mastery_progress", {
+    p_course_id: courseId,
+    p_lesson_id: lessonId,
+    p_lesson_index: parsedBody.data.lessonIndex ?? lessonIndex,
+    p_previous_lesson_id: previousLessonId,
+    p_duration_minutes: durationMinutes,
+    p_total_lessons: totalLessons,
+    p_required_quiz_percent: 80,
+  });
+
+  if (masteryResult.error) {
+    if (
+      errorMentions(masteryResult.error, "record_lesson_mastery_progress") ||
+      errorMentions(masteryResult.error, "lesson_mastery_progress")
+    ) {
+      return Response.json(
         {
-          user_id: user.id,
-          course_id: courseId,
-          issued_at: completedAt,
+          error:
+            "Mastery learning migration hali Supabase'da qo'llanmagan. production_edtech_foundation migrationni push qiling.",
         },
-        { onConflict: "user_id,course_id", ignoreDuplicates: true }
+        { status: 501 }
       );
+    }
+
+    return Response.json(
+      {
+        error:
+          masteryResult.error.code === "42501"
+            ? "Oldingi dars 100% va quiz 80%+ bo'lmaguncha bu dars yakunlanmaydi."
+            : "Progressni saqlashda muammo yuz berdi.",
+      },
+      { status: masteryResult.error.code === "42501" ? 403 : 500 }
+    );
+  }
+
+  await recordSessionIfNeeded();
+
+  const rpcPayload = (masteryResult.data ?? {}) as {
+    progressPercent?: number;
+    completedLessons?: number;
+    xpAwarded?: number;
+  };
+  const progressPercent =
+    typeof rpcPayload.progressPercent === "number"
+      ? rpcPayload.progressPercent
+      : enrollment.progress_percent ?? 0;
+  const completedAt =
+    progressPercent >= 100
+      ? enrollment.completed_at ?? new Date().toISOString()
+      : null;
+
+  if (completedAt) {
+    const rpcResult = await supabase.rpc("issue_course_certificate", {
+      p_course_id: courseId,
+      p_student_name:
+        user.user_metadata?.full_name ??
+        user.email?.split("@")[0] ??
+        "Kings Student",
+      p_course_title: course.title,
+      p_instructor_name: course.instructor,
+      p_template: {},
+    });
+    const { error: certificateError } = rpcResult.error
+      ? await supabase
+          .from("certificates")
+          .upsert(
+            {
+              user_id: userId,
+              course_id: courseId,
+              issued_at: completedAt,
+            },
+            { onConflict: "user_id,course_id", ignoreDuplicates: true }
+          )
+      : { error: null };
 
     if (certificateError) {
       console.error("certificate upsert failed", certificateError);
@@ -152,5 +220,9 @@ export async function POST(req: Request) {
   revalidatePath(`/courses/${courseId}`);
   revalidatePath(`/courses/${courseId}/watch`);
 
-  return Response.json({ progressPercent });
+  return jsonFromSchema(learningProgressResponseSchema, {
+    progressPercent,
+    completedLessons: rpcPayload.completedLessons,
+    xpAwarded: rpcPayload.xpAwarded,
+  });
 }

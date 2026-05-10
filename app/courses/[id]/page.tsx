@@ -25,9 +25,9 @@ import {
   getMasteryLevel,
 } from "@/lib/course-experience";
 import { getQuizByCourseId } from "@/lib/quizzes";
+import { getCourseByIdData } from "@/lib/content-store";
 import { createClient } from "@/utils/supabase/server";
 import {
-  getCourseById,
   getCourseLessonCount,
   getCoursePreviewLessons,
   getCourseResourceCount,
@@ -41,7 +41,7 @@ export default async function CourseDetailsPage({
   params,
 }: CourseDetailsPageProps) {
   const { id } = await params;
-  const course = getCourseById(id);
+  const course = await getCourseByIdData(id);
 
   if (!course) {
     notFound();
@@ -74,6 +74,13 @@ export default async function CourseDetailsPage({
   const previewLessons = getCoursePreviewLessons(course);
   const firstPreviewLesson = previewLessons[0];
   const isEnrolled = Boolean(enrollment);
+  const checkoutPath = `/checkout?type=course&id=${course.id}`;
+  const checkoutHref = user
+    ? checkoutPath
+    : `/login?${new URLSearchParams({
+        redirect: checkoutPath,
+        message: "Kursga yozilish uchun avval tizimga kiring.",
+      }).toString()}`;
   const experienceMeta = getCourseExperienceMeta(course);
   const tracks = getCourseTracks(course);
   const faqs = getCourseFaqs(course);
@@ -491,7 +498,7 @@ export default async function CourseDetailsPage({
                                 </Link>
                               ) : (
                                 <Link
-                                  href={`/checkout?type=course&id=${course.id}`}
+                                  href={checkoutHref}
                                   className="inline-flex items-center justify-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300"
                                 >
                                   To&apos;liq access
@@ -611,7 +618,7 @@ export default async function CourseDetailsPage({
                         </Link>
                       )}
                       <Link
-                        href={`/checkout?type=course&id=${course.id}`}
+                        href={checkoutHref}
                         className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
                       >
                         To&apos;liq kursni ochish

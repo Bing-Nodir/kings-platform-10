@@ -1,4 +1,4 @@
-import { courses } from "@/lib/catalog";
+import { getCoursesData } from "@/lib/content-store";
 import { getAdminAnalyticsData } from "@/lib/server/metrics";
 import {
   Activity,
@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 
 export default async function AdminAnalyticsPage() {
-  const data = await getAdminAnalyticsData();
+  const [data, courses] = await Promise.all([
+    getAdminAnalyticsData(),
+    getCoursesData(),
+  ]);
 
   const kpiCards = [
     { label: "Jami foydalanuvchilar", value: data.totalUsers.toLocaleString(), icon: Users, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },

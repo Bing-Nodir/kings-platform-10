@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Compass, Search, Sparkles, Users2 } from "lucide-react";
 import Footer from "@/components/Footer";
-import { courses } from "@/lib/catalog";
-import { mentorProfiles } from "@/lib/site";
+import { getCoursesData, getMentorProfilesData } from "@/lib/content-store";
 
 const sitePages = [
   {
@@ -47,6 +46,10 @@ function normalize(value: string) {
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q } = await searchParams;
+  const [courses, mentorProfiles] = await Promise.all([
+    getCoursesData(),
+    getMentorProfilesData(),
+  ]);
   const query = q?.trim() ?? "";
   const normalized = normalize(query);
 

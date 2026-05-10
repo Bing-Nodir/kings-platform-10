@@ -1,4 +1,8 @@
-﻿import { Mail, MessageSquare, Search } from "lucide-react";
+import { Mail, MessageSquare, Search } from "lucide-react";
+import {
+  formatSupportCategoryLabel,
+  formatSupportSourceLabel,
+} from "@/lib/server/support";
 import { createClient } from "@/utils/supabase/server";
 import { updateMessageStatus } from "./actions";
 
@@ -13,6 +17,10 @@ type ContactMessage = {
   subject: string;
   message: string;
   status: "new" | "in_review" | "resolved";
+  source?: string | null;
+  category?: string | null;
+  related_order_id?: string | null;
+  resolved_at?: string | null;
   created_at: string;
 };
 
@@ -20,14 +28,43 @@ async function getMessages(query?: string, status?: string) {
   const supabase = await createClient();
   let request = supabase
     .from("contact_messages")
-    .select("id, name, email, subject, message, status, created_at")
+    .select(
+      "id, name, email, subject, message, status, source, category, related_order_id, resolved_at, created_at"
+    )
     .order("created_at", { ascending: false });
 
   if (status && status !== "all") {
     request = request.eq("status", status);
   }
 
-  const { data, error } = await request;
+  const primary = await request;
+
+  let data = primary.data;
+  let error = primary.error;
+
+  if (
+    error?.code === "42703" ||
+    error?.message?.toLowerCase().includes("column")
+  ) {
+    let fallbackRequest = supabase
+      .from("contact_messages")
+      .select("id, name, email, subject, message, status, created_at")
+      .order("created_at", { ascending: false });
+
+    if (status && status !== "all") {
+      fallbackRequest = fallbackRequest.eq("status", status);
+    }
+
+    const fallback = await fallbackRequest;
+    data = (fallback.data ?? []).map((item) => ({
+      ...item,
+      source: "contact_form",
+      category: "general",
+      related_order_id: null,
+      resolved_at: null,
+    }));
+    error = fallback.error;
+  }
 
   if (error) {
     return {
@@ -91,11 +128,14 @@ export default async function AdminMessagesPage({
             Murojaatlar
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Saytdan yuborilgan contact form xabarlari
+            Contact, settings va billing support oqimlari
           </p>
         </div>
 
-        <form action="/admin/messages" className="grid gap-3 sm:grid-cols-[1fr_180px]">
+        <form
+          action="/admin/messages"
+          className="grid gap-3 sm:grid-cols-[1fr_180px]"
+        >
           <div className="relative min-w-0">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             <input
@@ -121,8 +161,10 @@ export default async function AdminMessagesPage({
 
       {error ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200">
-          `contact_messages` jadvali hali bazada yo'q yoki policy yetishmayapti. Supabase SQL Editor'da
-          `supabase/migrations/20260318_backend_repair.sql` migratsiyasini ishga tushiring.
+          `contact_messages` jadvali hali bazada yo'q yoki policy yetishmayapti.
+          Supabase SQL Editor'da
+          `supabase/migrations/20260318_backend_repair.sql` migratsiyasini ishga
+          tushiring.
         </div>
       ) : (
         <>
@@ -195,6 +237,24 @@ export default async function AdminMessagesPage({
                             })}
                           </span>
                         </div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">
+                          <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 dark:border-gray-800 dark:bg-gray-900">
+                            {formatSupportSourceLabel(message.source ?? "contact_form")}
+                          </span>
+                          <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 dark:border-gray-800 dark:bg-gray-900">
+                            {formatSupportCategoryLabel(message.category ?? "general")}
+                          </span>
+                          {message.related_order_id ? (
+                            <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 dark:border-gray-800 dark:bg-gray-900">
+                              Order #{message.related_order_id.slice(0, 8)}
+                            </span>
+                          ) : null}
+                          {message.resolved_at ? (
+                            <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 dark:border-gray-800 dark:bg-gray-900">
+                              {new Date(message.resolved_at).toLocaleDateString("uz-UZ")}
+                            </span>
+                          ) : null}
+                        </div>
                         <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-gray-600 dark:text-gray-300">
                           {message.message}
                         </p>
@@ -249,4 +309,3 @@ export default async function AdminMessagesPage({
     </div>
   );
 }
-

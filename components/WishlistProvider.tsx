@@ -7,7 +7,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 interface ToggleWishlistResult {
   ok: boolean;
@@ -24,6 +24,19 @@ interface WishlistContextValue {
   isMutating: (courseId: string) => boolean;
   toggleWishlist: (courseId: string) => Promise<ToggleWishlistResult>;
 }
+
+const FALLBACK_WISHLIST_CONTEXT: WishlistContextValue = {
+  courseIds: [],
+  isAuthenticated: false,
+  loading: false,
+  backendReady: false,
+  isSaved: () => false,
+  isMutating: () => false,
+  toggleWishlist: async () => ({
+    ok: false,
+    error: "Wishlist hozircha mavjud emas.",
+  }),
+};
 
 const WishlistContext = createContext<WishlistContextValue | null>(null);
 
@@ -42,7 +55,6 @@ function removeMutatingId(previous: Set<string>, courseId: string) {
 export function WishlistProvider({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const pathname = usePathname();
   const router = useRouter();
   const [courseIds, setCourseIds] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -108,7 +120,7 @@ export function WishlistProvider({
     return () => {
       isActive = false;
     };
-  }, [pathname]);
+  }, []);
 
   async function toggleWishlist(courseId: string): Promise<ToggleWishlistResult> {
     const alreadySaved = courseIds.includes(courseId);
@@ -204,7 +216,11 @@ export function useWishlist() {
   const context = useContext(WishlistContext);
 
   if (!context) {
-    throw new Error("useWishlist must be used within WishlistProvider");
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("useWishlist rendered without WishlistProvider; using fallback state.");
+    }
+
+    return FALLBACK_WISHLIST_CONTEXT;
   }
 
   return context;

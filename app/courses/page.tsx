@@ -2,31 +2,31 @@ import Link from "next/link";
 import CoursesCatalog from "@/components/CoursesCatalog";
 import SavedCoursesShelf from "@/components/SavedCoursesShelf";
 import {
-  courses,
   getCourseLessonCount,
   getCoursePreviewLessons,
   getCourseResourceCount,
 } from "@/lib/catalog";
+import { getCoursesData } from "@/lib/content-store";
 import { BookOpen, Files, Sparkles, Star, Users2 } from "lucide-react";
 
-const totalLessons = courses.reduce(
-  (sum, course) => sum + getCourseLessonCount(course),
-  0
-);
-const totalResources = courses.reduce(
-  (sum, course) => sum + getCourseResourceCount(course),
-  0
-);
-const totalPreviewLessons = courses.reduce(
-  (sum, course) => sum + getCoursePreviewLessons(course).length,
-  0
-);
-const totalStudents = courses.reduce((sum, course) => sum + course.students, 0);
-const averageRating = (
-  courses.reduce((sum, course) => sum + course.rating, 0) / courses.length
-).toFixed(1);
-
-export default function CoursesPage() {
+export default async function CoursesPage() {
+  const courses = await getCoursesData();
+  const totalLessons = courses.reduce(
+    (sum, course) => sum + getCourseLessonCount(course),
+    0
+  );
+  const totalResources = courses.reduce(
+    (sum, course) => sum + getCourseResourceCount(course),
+    0
+  );
+  const totalPreviewLessons = courses.reduce(
+    (sum, course) => sum + getCoursePreviewLessons(course).length,
+    0
+  );
+  const totalStudents = courses.reduce((sum, course) => sum + course.students, 0);
+  const averageRating = (
+    courses.reduce((sum, course) => sum + course.rating, 0) / courses.length
+  ).toFixed(1);
   const featuredCourse = courses[0];
 
   return (
@@ -128,7 +128,7 @@ export default function CoursesPage() {
 
       <section className="container mx-auto px-4 py-12 md:px-8 md:py-16">
         <div className="space-y-8">
-          <SavedCoursesShelf />
+          <SavedCoursesShelf courses={courses} />
           <CoursesCatalog courses={courses} />
         </div>
       </section>

@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { Mail, Search, UserCheck, UserX, Users, X } from "lucide-react";
+import { PRIMARY_ADMIN_EMAIL, isPrimaryAdminEmail } from "@/lib/admin-access";
+import UserRoleSelect from "./UserRoleSelect";
 
 interface AdminUsersPageProps {
   searchParams: Promise<{ q?: string }>;
@@ -73,6 +75,9 @@ export default async function AdminUsersPage({
               ? `"${query}" bo'yicha ${count} ta foydalanuvchi topildi. Jami ${totalCount} ta profil mavjud.`
               : `Jami ${totalCount} ta ro'yxatdan o'tgan foydalanuvchi`}
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
+            Asosiy admin access: {PRIMARY_ADMIN_EMAIL}
+          </div>
         </div>
         <form action="/admin/users" className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -152,20 +157,40 @@ export default async function AdminUsersPage({
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                          user.role === "admin"
-                            ? "bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300"
-                            : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                        }`}
-                      >
-                        {user.role === "admin" ? (
-                          <UserCheck className="h-3 w-3" />
-                        ) : (
-                          <UserX className="h-3 w-3" />
-                        )}
-                        {user.role ?? "student"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                            user.role === "admin"
+                              ? "bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300"
+                              : user.role === "instructor"
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                          }`}
+                        >
+                          {user.role === "admin" ? (
+                            <UserCheck className="h-3 w-3" />
+                          ) : (
+                            <UserX className="h-3 w-3" />
+                          )}
+                          {user.role ?? "student"}
+                        </span>
+                        <UserRoleSelect
+                          userId={user.id}
+                          email={user.email}
+                          currentRole={
+                            (user.role === "admin" ||
+                            user.role === "instructor" ||
+                            user.role === "student"
+                              ? user.role
+                              : "student") as "student" | "instructor" | "admin"
+                          }
+                        />
+                        {isPrimaryAdminEmail(user.email) ? (
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-300">
+                            Primary admin
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                       {user.enrolledCourseCount} ta kurs

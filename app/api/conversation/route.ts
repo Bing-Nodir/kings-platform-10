@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCourseById } from "@/lib/catalog";
+import { getCourseByIdData } from "@/lib/content-store";
 import {
   getAuthenticatedContext,
   hasCourseEnrollment,
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing courseId" }, { status: 400 });
   }
 
-  if (!getCourseById(courseId)) {
+  if (!(await getCourseByIdData(courseId))) {
     return NextResponse.json({ error: "Course not found" }, { status: 404 });
   }
 
@@ -65,7 +65,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Missing courseId" }, { status: 400 });
   }
 
-  if (!getCourseById(courseId)) {
+  if (!(await getCourseByIdData(courseId))) {
     return NextResponse.json({ error: "Course not found" }, { status: 404 });
   }
 

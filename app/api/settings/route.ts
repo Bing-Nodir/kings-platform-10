@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedContext } from "@/lib/server/auth";
 import {
+  safeQueueUserEmailNotification,
+  safeRecordOperationalEvent,
+} from "@/lib/server/operations";
+import { recordSecurityAuditLog } from "@/lib/server/settings";
+import {
   isSupportedLanguage,
   isValidPhone,
   normalizeMultiline,
@@ -88,6 +93,43 @@ export async function PUT(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await recordSecurityAuditLog(
+    user.id,
+    "profile_updated",
+    { changedFields: Object.keys(updates) },
+    supabase
+  );
+
+  await safeRecordOperationalEvent(
+    {
+      userId: user.id,
+      scope: "security",
+      eventType: "profile_updated",
+      entityType: "profile",
+      entityId: user.id,
+      title: "Profil ma'lumotlari yangilandi",
+      detail: {
+        changedFields: Object.keys(updates),
+      },
+      dedupeKey: `profile:${user.id}:${Object.keys(updates).sort().join("-")}`,
+    },
+    { supabase }
+  );
+
+  await safeQueueUserEmailNotification(
+    {
+      userId: user.id,
+      email: user.email,
+      eventType: "profile_updated",
+      subject: "Profil ma'lumotlari yangilandi",
+      payload: {
+        changedFields: Object.keys(updates),
+      },
+      dedupeKey: `profile:${user.id}:${Object.keys(updates).sort().join("-")}:email`,
+    },
+    { supabase }
+  );
 
   return NextResponse.json({ ok: true });
 }

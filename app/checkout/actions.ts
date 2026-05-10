@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getCourseById, getProductById } from "@/lib/catalog";
+import {
+  safeQueueUserEmailNotification,
+  safeRecordOperationalEvent,
+} from "@/lib/server/operations";
+import { createPendingCheckoutOrder } from "@/lib/server/payments";
 import {
   coercePaymentMethod,
   isValidPhone,
@@ -18,28 +22,28 @@ function isBackendPolicyError(error: { code?: string; message?: string } | null)
   );
 }
 
-function errorMentions(
-  error: { message?: string; details?: string; hint?: string } | null,
-  value: string
-) {
-  const combined = [error?.message, error?.details, error?.hint]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return combined.includes(value.toLowerCase());
-}
-
 export async function createOrder(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
-
   const itemType = formData.get("type") === "product" ? "product" : "course";
   const itemId = normalizeSingleLine(formData.get("id"), 120);
+
+  if (!user) {
+    const redirectTarget = `/checkout?type=${itemType}&id=${encodeURIComponent(itemId)}`;
+    redirect(
+      `/login?${new URLSearchParams({
+        redirect: redirectTarget,
+        message:
+          itemType === "course"
+            ? "Kursga yozilish uchun avval tizimga kiring."
+            : "Xarid qilish uchun avval tizimga kiring.",
+      }).toString()}`
+    );
+  }
+
   const paymentMethod = coercePaymentMethod(formData.get("payment_method"));
   const fullName = normalizeSingleLine(formData.get("full_name"), 100);
   const phone = normalizeSingleLine(formData.get("phone"), 20);
@@ -52,113 +56,87 @@ export async function createOrder(formData: FormData) {
     redirect(`/checkout?type=${itemType}&id=${itemId}&error=missing_fields`);
   }
 
-  let amount = 0;
-  let itemTitle = "";
+  const result = await createPendingCheckoutOrder({
+    supabase,
+    userId: user.id,
+    userEmail: user.email,
+    itemId,
+    itemType,
+    paymentMethod,
+    customerName: fullName,
+    customerPhone: phone,
+  });
 
-  if (itemType === "course") {
-    const course = getCourseById(itemId);
-    if (!course) redirect("/courses");
+  if (!result.ok) {
+    if (result.reason === "redirect" && result.redirectPath) {
+      redirect(result.redirectPath);
+    }
 
-    amount = course.price;
-    itemTitle = course.title;
-
-    const { data: existing } = await supabase
-      .from("enrollments")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("course_id", itemId)
-      .maybeSingle();
-
-    if (existing) redirect(`/courses/${itemId}/watch`);
-  }
-
-  if (itemType === "product") {
-    const product = getProductById(itemId);
-    if (!product || !product.inStock) redirect("/shop");
-
-    amount = product.price;
-    itemTitle = product.name;
-  }
-
-  const orderPayload = {
-    user_id: user.id,
-    user_email: user.email,
-    item_id: itemId,
-    item_title: itemTitle,
-    item_type: itemType,
-    amount,
-    status: "paid" as const,
-    payment_method: paymentMethod,
-    customer_name: fullName,
-    customer_phone: phone,
-  };
-
-  let { data: order, error: orderError } = await supabase
-    .from("orders")
-    .insert(orderPayload)
-    .select("id")
-    .single();
-
-  if (
-    orderError &&
-    (errorMentions(orderError, "payment_method") ||
-      errorMentions(orderError, "customer_name") ||
-      errorMentions(orderError, "customer_phone"))
-  ) {
-    const fallbackOrder = await supabase
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        user_email: user.email,
-        item_id: itemId,
-        item_title: itemTitle,
-        item_type: itemType,
-        amount,
-        status: "paid",
-      })
-      .select("id")
-      .single();
-
-    order = fallbackOrder.data;
-    orderError = fallbackOrder.error;
-  }
-
-  if (orderError || !order) {
-    if (isBackendPolicyError(orderError)) {
+    if (
+      result.reason === "setup_required" ||
+      isBackendPolicyError(result.error ?? null)
+    ) {
       redirect(
         `/checkout?type=${itemType}&id=${itemId}&error=backend_setup_required`
       );
     }
 
-    redirect(`/checkout?type=${itemType}&id=${itemId}&error=order_failed`);
-  }
-
-  if (itemType === "course") {
-    const { error: enrollmentError } = await supabase.from("enrollments").insert({
-      user_id: user.id,
-      course_id: itemId,
-      progress_percent: 0,
-    });
-
-    if (enrollmentError) {
-      if (isBackendPolicyError(enrollmentError)) {
-        redirect(
-          `/checkout?type=${itemType}&id=${itemId}&error=backend_setup_required`
-        );
-      }
-
-      redirect(`/checkout?type=${itemType}&id=${itemId}&error=enrollment_failed`);
-    }
-
-    revalidatePath("/dashboard");
-    revalidatePath("/admin/orders");
-    revalidatePath(`/courses/${itemId}`);
-    revalidatePath(`/courses/${itemId}/watch`);
-    redirect(`/checkout/success?orderId=${order.id}&courseId=${itemId}`);
+    redirect(
+      `/checkout?type=${itemType}&id=${itemId}&error=${
+        result.reason === "payment_intent_failed" ? "payment_intent_failed" : "order_failed"
+      }`
+    );
   }
 
   revalidatePath("/dashboard");
   revalidatePath("/admin/orders");
-  revalidatePath("/shop");
-  redirect(`/checkout/success?orderId=${order.id}&itemId=${itemId}`);
+  revalidatePath("/admin");
+  revalidatePath("/settings/billing");
+  revalidatePath("/admin/operations");
+  if (itemType === "course") {
+    revalidatePath(`/courses/${itemId}`);
+    revalidatePath(`/courses/${itemId}/watch`);
+  } else {
+    revalidatePath("/shop");
+  }
+
+  await safeRecordOperationalEvent(
+    {
+      userId: user.id,
+      scope: "payment",
+      eventType: "payment_intent_created",
+      entityType: "order",
+      entityId: result.order.id,
+      title: "Checkout payment intent yaratildi",
+      detail: {
+        itemType,
+        itemId,
+        paymentIntentId: result.paymentIntent.id,
+        paymentMethod,
+      },
+      dedupeKey: `payment:${result.paymentIntent.id}:created`,
+    },
+    { supabase }
+  );
+
+  await safeQueueUserEmailNotification(
+    {
+      userId: user.id,
+      email: user.email,
+      eventType: "payment_intent_created",
+      subject: "To'lov jarayoni boshlandi",
+      payload: {
+        orderId: result.order.id,
+        itemType,
+        itemId,
+        paymentMethod,
+      },
+      dedupeKey: `payment:${result.paymentIntent.id}:created:email`,
+    },
+    { supabase }
+  );
+
+  redirect(
+    `/checkout/success?orderId=${result.order.id}&paymentIntentId=${result.paymentIntent.id}&itemId=${itemId}`
+  );
 }

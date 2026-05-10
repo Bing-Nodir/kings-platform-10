@@ -9,18 +9,20 @@ import {
   Flame,
   PlayCircle,
   QrCode,
+  ShieldCheck,
   Sparkles,
   Star,
   TrendingUp,
   Trophy,
 } from "lucide-react";
 import CourseWishlistButton from "@/components/CourseWishlistButton";
-import { courses, getCourseById } from "@/lib/catalog";
+import { getCoursesData } from "@/lib/content-store";
 import { getMasteryLevel } from "@/lib/course-experience";
 import {
   buildLearnerAchievements,
   getNextAchievement,
 } from "@/lib/learner-achievements";
+import { getStudentReputation } from "@/lib/server/student-reputation";
 import { createClient } from "@/utils/supabase/server";
 
 interface DashboardProfile {
@@ -45,6 +47,12 @@ interface DashboardSessionRow {
 interface DashboardQuizAttemptRow {
   percent: number;
   passed: boolean;
+}
+
+interface DashboardCertificateRow {
+  course_id: string;
+  issued_at: string;
+  certificate_no?: string | null;
 }
 
 function formatLearningTime(totalMinutes: number) {
@@ -106,6 +114,7 @@ async function getDashboardData(userId: string) {
     { data: sessions },
     { data: quizAttempts },
     wishlistResult,
+    reputation,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -117,7 +126,10 @@ async function getDashboardData(userId: string) {
       .select("course_id, progress_percent, last_accessed_at, completed_at, enrolled_at")
       .eq("user_id", userId)
       .order("last_accessed_at", { ascending: false }),
-    supabase.from("certificates").select("course_id, issued_at").eq("user_id", userId),
+    supabase
+      .from("certificates")
+      .select("course_id, issued_at, certificate_no")
+      .eq("user_id", userId),
     supabase
       .from("learning_sessions")
       .select("duration_minutes, created_at")
@@ -129,6 +141,7 @@ async function getDashboardData(userId: string) {
       .select("course_id, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false }),
+    getStudentReputation(userId, supabase),
   ]);
 
   const safeSessions = (sessions ?? []) as DashboardSessionRow[];
@@ -153,6 +166,7 @@ async function getDashboardData(userId: string) {
   return {
     profile: profile as DashboardProfile | null,
     enrollments: (enrollments ?? []) as DashboardEnrollmentRow[],
+    certificates: (certificates ?? []) as DashboardCertificateRow[],
     certCount: certificates?.length ?? 0,
     learningTime: formatLearningTime(totalMinutes),
     totalHours: Math.floor(totalMinutes / 60),
@@ -161,11 +175,14 @@ async function getDashboardData(userId: string) {
     passedQuizzes,
     avgQuizScore,
     wishlistCourseIds,
+    reputation,
   };
 }
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const courses = await getCoursesData();
+  const coursesById = new Map(courses.map((course) => [course.id, course]));
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -178,6 +195,7 @@ export default async function DashboardPage() {
     profile,
     enrollments,
     certCount,
+    certificates,
     learningTime,
     totalHours,
     sessionCount,
@@ -185,6 +203,7 @@ export default async function DashboardPage() {
     passedQuizzes,
     avgQuizScore,
     wishlistCourseIds,
+    reputation,
   } = await getDashboardData(user.id);
 
   const displayName = profile?.full_name ?? user.email?.split("@")[0] ?? "Foydalanuvchi";
@@ -192,7 +211,7 @@ export default async function DashboardPage() {
   const activeEnrollments = enrollments
     .filter((enrollment) => !enrollment.completed_at)
     .map((enrollment) => {
-      const course = getCourseById(enrollment.course_id);
+      const course = coursesById.get(enrollment.course_id);
 
       if (!course) {
         return null;
@@ -202,6 +221,24 @@ export default async function DashboardPage() {
         ...enrollment,
         course,
         mastery: getMasteryLevel(enrollment.progress_percent ?? 0),
+      };
+    })
+    .filter((enrollment) => Boolean(enrollment));
+  const completedEnrollments = enrollments
+    .filter((enrollment) => enrollment.completed_at)
+    .map((enrollment) => {
+      const course = coursesById.get(enrollment.course_id);
+
+      if (!course) {
+        return null;
+      }
+
+      return {
+        ...enrollment,
+        course,
+        certificate: certificates.find(
+          (certificate) => certificate.course_id === enrollment.course_id
+        ),
       };
     })
     .filter((enrollment) => Boolean(enrollment));
@@ -228,7 +265,7 @@ export default async function DashboardPage() {
     .filter((course) => !enrolledIds.has(course.id))
     .slice(0, 2);
   const savedCourses = wishlistCourseIds
-    .map((courseId) => getCourseById(courseId))
+    .map((courseId) => coursesById.get(courseId))
     .filter((course) => Boolean(course))
     .slice(0, 3);
 
@@ -273,6 +310,17 @@ export default async function DashboardPage() {
             : "Hali yo'q",
       icon: Star,
       color: "text-purple-500",
+    },
+    {
+      label: "Credit score",
+      value: reputation.backendReady ? reputation.creditScore.toString() : "Setup",
+      icon: ShieldCheck,
+      color:
+        reputation.creditScore >= 80
+          ? "text-emerald-500"
+          : reputation.creditScore >= 60
+            ? "text-amber-500"
+            : "text-red-500",
     },
   ];
 
@@ -458,6 +506,38 @@ export default async function DashboardPage() {
               </section>
             )}
 
+            {completedEnrollments.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-amber-500" />
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Sertifikatlar
+                  </h3>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {completedEnrollments.map((enrollment) => (
+                    <Link
+                      key={enrollment!.course.id}
+                      href={`/certificates/${enrollment!.course.id}`}
+                      className="rounded-[1.5rem] border border-amber-100 bg-white p-5 shadow-sm transition hover:border-amber-300 hover:shadow-md dark:border-amber-900/30 dark:bg-gray-950"
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">
+                        Certificate track
+                      </p>
+                      <h3 className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
+                        {enrollment!.course.title}
+                      </h3>
+                      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        {enrollment!.certificate?.certificate_no
+                          ? `No: ${enrollment!.certificate.certificate_no}`
+                          : "Certificate raqami ochilganda avtomatik yaratiladi"}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section className="space-y-4">
               <div className="flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-amber-500" />
@@ -569,6 +649,24 @@ export default async function DashboardPage() {
                   </Link>
                 </>
               )}
+            </div>
+
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 dark:border-emerald-900/30 dark:bg-emerald-950/20">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-6 w-6 text-emerald-600" />
+                <div>
+                  <p className="font-semibold text-emerald-950 dark:text-emerald-200">
+                    Student credit score:{" "}
+                    {reputation.backendReady ? reputation.creditScore : 100}
+                  </p>
+                  <p className="text-xs text-emerald-700/80 dark:text-emerald-300">
+                    Discussion qoidalari buzilsa score kamayadi
+                    {reputation.pricingPenaltyPercent > 0
+                      ? ` va keyingi kurs narxiga +${reputation.pricingPenaltyPercent}% risk bor`
+                      : "."}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {nextAchievement && (

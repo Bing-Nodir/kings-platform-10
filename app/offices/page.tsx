@@ -1,8 +1,13 @@
 import { Clock3, ExternalLink, MapPin, Phone, QrCode } from "lucide-react";
 import Footer from "@/components/Footer";
-import { officeLocations } from "@/lib/site";
+import { getOfficeLocationsData } from "@/lib/content-store";
 
-export default function OfficesPage() {
+export const revalidate = 300;
+
+export default async function OfficesPage() {
+  const officeLocations = await getOfficeLocationsData();
+  const hqOffice = officeLocations[0];
+
   return (
     <>
       <main className="min-h-screen bg-gray-50 dark:bg-black">
@@ -105,13 +110,13 @@ export default function OfficesPage() {
                 Kings Education HQ — Asosiy kampus
               </h2>
               <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                {officeLocations[0].address}, {officeLocations[0].city}
+                {hqOffice?.address ?? "Asosiy kampus manzili hali kiritilmagan"}, {hqOffice?.city ?? "TBA"}
               </p>
             </div>
             <iframe
               title="Kings Education HQ xaritada"
               src={`https://www.google.com/maps?q=${encodeURIComponent(
-                officeLocations[0].mapQuery
+                hqOffice?.mapQuery ?? "Tashkent"
               )}&output=embed`}
               className="h-[480px] w-full border-0"
               loading="lazy"

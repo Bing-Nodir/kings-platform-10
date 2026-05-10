@@ -3,6 +3,21 @@
 -- Run this in Supabase SQL Editor for existing projects
 -- =============================================
 
+create extension if not exists "pgcrypto";
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  email text,
+  avatar_url text,
+  phone text,
+  bio text,
+  company_name text,
+  language_pref text not null default 'uz',
+  role text not null default 'student',
+  created_at timestamptz not null default now()
+);
+
 alter table if exists public.enrollments
   add column if not exists last_lesson_id text;
 
@@ -22,28 +37,50 @@ create table if not exists public.contact_messages (
 
 alter table if exists public.contact_messages enable row level security;
 
-drop policy if exists "Admin can view all enrollments" on public.enrollments;
-create policy "Admin can view all enrollments"
-  on public.enrollments for select
-  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+do $$
+begin
+  if to_regclass('public.enrollments') is not null then
+    execute 'drop policy if exists "Admin can view all enrollments" on public.enrollments';
+    execute $sql$
+      create policy "Admin can view all enrollments"
+        on public.enrollments for select
+        using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+    $sql$;
+  end if;
 
-drop policy if exists "Users can insert own certificates" on public.certificates;
-create policy "Users can insert own certificates"
-  on public.certificates for insert with check (auth.uid() = user_id);
+  if to_regclass('public.certificates') is not null then
+    execute 'drop policy if exists "Users can insert own certificates" on public.certificates';
+    execute $sql$
+      create policy "Users can insert own certificates"
+        on public.certificates for insert with check (auth.uid() = user_id)
+    $sql$;
 
-drop policy if exists "Admin can view all certificates" on public.certificates;
-create policy "Admin can view all certificates"
-  on public.certificates for select
-  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+    execute 'drop policy if exists "Admin can view all certificates" on public.certificates';
+    execute $sql$
+      create policy "Admin can view all certificates"
+        on public.certificates for select
+        using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+    $sql$;
+  end if;
 
-drop policy if exists "Admin can view all learning sessions" on public.learning_sessions;
-create policy "Admin can view all learning sessions"
-  on public.learning_sessions for select
-  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+  if to_regclass('public.learning_sessions') is not null then
+    execute 'drop policy if exists "Admin can view all learning sessions" on public.learning_sessions';
+    execute $sql$
+      create policy "Admin can view all learning sessions"
+        on public.learning_sessions for select
+        using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+    $sql$;
+  end if;
 
-drop policy if exists "Users can insert own orders" on public.orders;
-create policy "Users can insert own orders"
-  on public.orders for insert with check (auth.uid() = user_id);
+  if to_regclass('public.orders') is not null then
+    execute 'drop policy if exists "Users can insert own orders" on public.orders';
+    execute $sql$
+      create policy "Users can insert own orders"
+        on public.orders for insert with check (auth.uid() = user_id)
+    $sql$;
+  end if;
+end
+$$;
 
 drop policy if exists "Anyone can submit contact messages" on public.contact_messages;
 create policy "Anyone can submit contact messages"

@@ -35,7 +35,7 @@ export const companyStats = [
   { label: "Flagship kurslar", value: "8+" },
   { label: "Core mentorlar", value: "4" },
   { label: "Preview darslar", value: "24+" },
-  { label: "Shaharlar", value: "3" },
+  { label: "Filiallar", value: "3" },
 ];
 
 export const officeLocations: OfficeLocation[] = [
@@ -43,27 +43,27 @@ export const officeLocations: OfficeLocation[] = [
     name: "Kings Education HQ",
     city: "Toshkent",
     address: "Mirzo Ulug'bek tumani, Mustaqillik ko'chasi 75",
-    hours: "Dush–Shan: 09:00–21:00 | Yak: 10:00–18:00",
+    hours: "Dush-Shan: 09:00-21:00 | Yak: 10:00-18:00",
     phone: "+998 33 806 45 45",
     description:
       "Asosiy kampus: mentorlar bilan uchrashuv, workshoplar va QR attendance shu yerda ishlaydi. 3 ta o'quv xona, 1 ta media studiya.",
     mapQuery: "Tashkent Mirzo Ulugbek district Mustaqillik",
   },
   {
-    name: "Kings Education — Yunusobod",
+    name: "Kings Education - Yunusobod",
     city: "Toshkent",
     address: "Yunusobod tumani, Amir Temur shoh ko'chasi 108A",
-    hours: "Dush–Juma: 10:00–20:00 | Shan: 10:00–17:00",
+    hours: "Dush-Juma: 10:00-20:00 | Shan: 10:00-17:00",
     phone: "+998 33 123 45 67",
     description:
       "Yunusobod filiali: Data Analytics va Power BI yo'nalishlari bo'yicha haftalik guruhlar va weekend bootcamp formatlari.",
     mapQuery: "Tashkent Yunusobod Amir Temur",
   },
   {
-    name: "Kings Education — Samarqand",
+    name: "Kings Education - Samarqand",
     city: "Samarqand",
     address: "Registon ko'chasi 14, 2-qavat",
-    hours: "Dush–Shan: 09:00–20:00",
+    hours: "Dush-Shan: 09:00-20:00",
     phone: "+998 91 234 56 78",
     description:
       "Samarqand shahridagi birinchi filial: Python, SQL va Data Science bootcamplari. Oflayn guruhlar uchun maxsus narxlar.",
