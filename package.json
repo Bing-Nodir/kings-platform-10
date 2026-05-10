@@ -2,11 +2,13 @@
   "name": "kings-education-platform",
   "version": "0.1.0",
   "private": true,
+
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "prisma generate",
     "verify": "npm run lint && npm run build && node scripts/verify.mjs"
   },
   "dependencies": {
