@@ -1,8 +1,10 @@
-import { config } from "dotenv";
+// O'RNIGA BUNI QO'YING:
+import { loadEnvConfig } from "@next/env";
+
+// Loyihadagi .env fayllarini avtomatik yuklaydi
+loadEnvConfig(process.cwd());
+
 import { defineConfig } from "prisma/config";
-
-config({ path: ".env.local" });
-
 const databaseUrl =
   process.env.DIRECT_URL ??
   process.env.DATABASE_URL ??
