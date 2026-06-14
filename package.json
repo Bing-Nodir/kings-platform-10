@@ -2,47 +2,56 @@
   "name": "kings-education-platform",
   "version": "0.1.0",
   "private": true,
-
+  "packageManager": "pnpm@10.6.3",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "verify": "npm run lint && npm run build && node scripts/verify.mjs"
+    "verify": "pnpm lint && pnpm build && node scripts/verify.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@base-ui/react": "^1.3.0",
-    "@prisma/client": "^7.8.0",
     "@radix-ui/react-slot": "^1.2.4",
+    "@remotion/player": "^4.0.459",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.105.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cobe": "^2.0.1",
     "dotted-map": "^3.1.0",
     "framer-motion": "^12.36.0",
     "lucide-react": "^0.577.0",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
     "react-use-measure": "^2.1.7",
+    "remotion": "^4.0.459",
     "resend": "^6.9.4",
-    "shadcn": "^4.0.6",
+    "simple-icons": "^16.19.0",
     "tailwind-merge": "^3.5.0",
     "tw-animate-css": "^1.4.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@prisma/client": "^7.8.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.183.1",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.2.6",
     "prisma": "^7.8.0",
+    "shadcn": "^4.7.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.10"
+    }
   }
 }

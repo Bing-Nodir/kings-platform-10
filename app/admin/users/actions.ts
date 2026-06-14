@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { PRIMARY_ADMIN_EMAIL, isPrimaryAdminEmail } from "@/lib/admin-access";
+import { isPrimaryAdminEmail } from "@/lib/admin-access";
 import { requireAdminContext } from "@/lib/server/auth";
 import {
   safeQueueUserEmailNotification,
@@ -30,12 +30,6 @@ export async function updateUserRole(userId: string, role: string) {
 
     if (profileError || !profile) {
       return { error: profileError?.message ?? "Foydalanuvchi topilmadi" };
-    }
-
-    if (role === "admin" && !isPrimaryAdminEmail(profile.email)) {
-      return {
-        error: `Faqat ${PRIMARY_ADMIN_EMAIL} emaili admin bo'lishi mumkin`,
-      };
     }
 
     if (role === "instructor" && profile.role !== "instructor") {

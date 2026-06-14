@@ -27,7 +27,7 @@ export function LampDemo({
           duration: 1.2,
           ease: "easeInOut",
         }}
-        className="mt-8 bg-gradient-to-br from-cyan-300 via-blue-500 to-purple-600 bg-clip-text py-4 text-center text-4xl font-medium tracking-tight text-transparent md:text-7xl"
+        className="w-full max-w-[10.5ch] break-words bg-gradient-to-br from-cyan-300 via-blue-500 to-purple-600 bg-clip-text px-2 py-3 text-center text-[clamp(2rem,7vw,5.25rem)] font-medium leading-[1.04] tracking-tight text-transparent sm:max-w-5xl"
       >
         {title}
       </motion.h1>
@@ -36,7 +36,7 @@ export function LampDemo({
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 1.2, ease: "easeInOut" }}
-        className="mt-4 max-w-2xl text-center text-base leading-relaxed text-gray-400 md:text-lg"
+        className="mt-3 w-full max-w-[22rem] text-balance text-center text-[clamp(0.95rem,2vw,1.125rem)] leading-relaxed text-gray-400 sm:max-w-3xl"
       >
         {description}
       </motion.p>
@@ -45,19 +45,19 @@ export function LampDemo({
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 1.2, ease: "easeInOut" }}
-        className="pointer-events-auto relative z-[80] mt-8 flex flex-col gap-4 sm:flex-row"
+        className="pointer-events-auto relative z-[80] mt-8 flex w-full max-w-[22rem] flex-col items-center gap-4 sm:w-auto sm:max-w-xl sm:flex-row"
       >
         <Link
           href="/courses"
           aria-label="Kurslar sahifasini ochish"
-          className="relative z-[100] inline-flex h-14 items-center justify-center gap-2 rounded-full bg-cyan-600 px-8 text-base font-semibold text-white shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)] transition-all hover:bg-cyan-500 hover:shadow-[0_0_30px_-5px_rgba(6,182,212,0.6)] active:scale-95 cursor-pointer"
+          className="relative z-[100] inline-flex h-14 w-full max-w-[22rem] items-center justify-center gap-2 rounded-full bg-cyan-600 px-6 text-base font-semibold text-white shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)] transition-all hover:bg-cyan-500 hover:shadow-[0_0_30px_-5px_rgba(6,182,212,0.6)] active:scale-95 cursor-pointer sm:w-auto sm:px-8"
         >
           Kurslarni ko&apos;rish
         </Link>
         <Link
           href="/shop"
           aria-label="Marketplace sahifasini ochish"
-          className="relative z-[100] inline-flex h-14 items-center justify-center gap-2 rounded-full border border-gray-700 bg-gray-900/50 px-8 text-base font-medium text-gray-300 backdrop-blur-sm transition-all hover:bg-gray-800 hover:text-white active:scale-95 cursor-pointer"
+          className="relative z-[100] inline-flex h-14 w-full max-w-[22rem] items-center justify-center gap-2 rounded-full border border-gray-700 bg-gray-900/50 px-6 text-base font-medium text-gray-300 backdrop-blur-sm transition-all hover:bg-gray-800 hover:text-white active:scale-95 cursor-pointer sm:w-auto sm:px-8"
         >
           <ShoppingBag className="h-4 w-4" />
           Marketplace
@@ -69,11 +69,11 @@ export function LampDemo({
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           transition={{ delay: 0.8, duration: 1 }}
-          className="pointer-events-auto relative z-50 mt-12 grid grid-cols-3 gap-4 sm:gap-8 border-t border-white/10 pt-8 text-center"
+          className="pointer-events-auto relative z-50 mt-10 grid w-full max-w-2xl grid-cols-1 gap-5 border-t border-white/10 pt-7 text-center min-[560px]:grid-cols-3 sm:gap-8"
         >
           {stats.map((stat) => (
             <div key={stat.label} className="space-y-1 sm:space-y-2">
-              <div className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</div>
+              <div className="text-[clamp(1.75rem,4vw,3rem)] font-bold leading-none text-white">{stat.value}</div>
               <div className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-gray-500">{stat.label}</div>
             </div>
           ))}
@@ -93,11 +93,11 @@ export const LampContainer = ({
   return (
     <div
       className={cn(
-        "relative z-0 flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-black",
+        "relative z-0 flex min-h-[calc(100svh-5rem)] w-full flex-col items-center justify-center overflow-hidden bg-black sm:min-h-[calc(100svh-6rem)]",
         className
       )}
     >
-      <div className="absolute inset-0 z-10 pointer-events-none">
+      <div className="pointer-events-none absolute inset-0 z-20">
         <ParticleEffect />
       </div>
       <div className="pointer-events-none relative z-10 flex w-full flex-1 scale-y-125 items-center justify-center isolate">
@@ -160,7 +160,7 @@ export const LampContainer = ({
         <div className="absolute inset-auto z-40 h-44 w-full -translate-y-[12.5rem] bg-black "></div>
       </div>
 
-      <div className="relative z-50 flex -translate-y-80 flex-col items-center px-5">
+      <div className="relative z-50 flex w-full -translate-y-12 flex-col items-center px-5 pb-10 pt-4 sm:-translate-y-16 md:-translate-y-20 lg:-translate-y-24">
         {children}
       </div>
     </div>

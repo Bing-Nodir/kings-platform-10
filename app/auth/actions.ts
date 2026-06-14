@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { isPrimaryAdminEmail } from "@/lib/admin-access";
+import { PRIMARY_ADMIN_EMAIL, isPrimaryAdminEmail } from "@/lib/admin-access";
 import { isAdminUser } from "@/lib/server/auth";
 import {
   safeQueueNotificationJob,
@@ -120,7 +120,7 @@ function getAuthErrorMessage(error: unknown) {
   }
 
   if (normalized.includes("invalid login credentials")) {
-    return "Email yoki parol noto'g'ri. Admin email sifatida nodirkhudayarov@gmail.com ishlatilishi kerak.";
+    return `Email yoki parol noto'g'ri. Asosiy admin email: ${PRIMARY_ADMIN_EMAIL}.`;
   }
 
   return message || "Auth xatosi yuz berdi. Qaytadan urinib ko'ring.";

@@ -2,11 +2,15 @@ import Link from "next/link";
 import { ArrowRight, Building2, MapPinned, Sparkles, Trophy, Users2 } from "lucide-react";
 import CourseCard from "@/components/CourseCard";
 import Footer from "@/components/Footer";
+import HomeCoursesCarousel from "@/components/HomeCoursesCarousel";
 import MapSection from "@/components/MapSection";
 import RoadmapSection from "@/components/RoadmapSection";
+import VintageBentoEcosystem from "@/components/VintageBentoEcosystem";
+import VintageGlobeSection from "@/components/VintageGlobeSection";
 import { LampDemo } from "@/components/ui/lamp";
 import { GlowyWavesHero } from "@/components/ui/glowy-waves-hero";
 import { LogoCloud } from "@/components/ui/logo-cloud-3";
+import { PrismaHero } from "@/components/ui/prisma-hero";
 import {
   getCoursesData,
   getHomeEcosystemCardsData,
@@ -25,17 +29,14 @@ const ecosystemIcons = {
 } as const;
 
 const logos = [
-  { src: "https://cdn.simpleicons.org/nvidia/000000", alt: "Nvidia Logo" },
-  { src: "https://cdn.simpleicons.org/supabase/000000", alt: "Supabase Logo" },
-  {
-    src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTIyLjI4MTkgOS44MjExYTUuOTg0NyA1Ljk4NDcgMCAwIDAtLjUxNTctNC45MTA4IDYuMDQ2MiA2LjA0NjIgMCAwIDAtNi41MDk4LTIuOUE2LjA2NTEgNi4wNjUxIDAgMCAwIDQuOTgwNyA0LjE4MThhNS45ODQ3IDUuOTg0NyAwIDAgMC0zLjk5NzcgMi45IDYuMDQ2MiA2LjA0NjIgMCAwIDAgLjc0MjcgNy4wOTY2IDUuOTggNS45OCAwIDAgMCAuNTExIDQuOTEwNyA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNDYgMi45MDAxQTYuMDY1MSA2LjA2NTEgMCAwIDAgMTkuMDE5MiAxOS44MThhNS45ODQ3IDUuOTg0NyAwIDAgMCAzLjk5NzctMi45IDYuMDQ2MiA2LjA0NjIgMCAwIDAtLjczNS03LjA5Njl6bS05LjAyMiAxMi42MDgxYTQuNDc1NSA0LjQ3NTUgMCAwIDEtMi44NzY0LTEuMDQwOGwuMTQxOS0uMDgwNCA0Ljc3ODMtMi43NTgyYS43OTQ4Ljc5NDggMCAwIDAgLjM5MjctLjY4MTN2LTYuNzM2OWwyLjAyIDEuMTY4NmEuMDcxLjA3MSAwIDAgMSAuMDM4LjA1MnY1LjU4MjZhNC41MDQgNC41MDQgMCAwIDEtNC40OTQ1IDQuNDk0NXptLTkuNjYwNy00LjEyNTRhNC40NzA4IDQuNDcwOCAwIDAgMS0uNTM0Ni0zLjAxMzdsLjE0Mi4wODUyIDQuNzgzIDIuNzU4MmEuNzcxMi43NzEyIDAgMCAwIC43ODA2IDBsNS44NDI4LTMuMzY4NXYyLjMzMjRhLjA4MDQuMDgwNCAwIDAgMS0uMDMzMi4wNjE1TDkuNzQgMTkuOTUwMmE0LjQ5OTIgNC40OTkyIDAgMCAxLTYuMTQwOC0xLjY1NXptLTIuMzE2OC05LjA4MDJhNC40ODQ5IDQuNDg0OSAwIDAgMSAyLjM0MS0yLjAwM2wtLjAwNDcuMTYxNHY1LjUxODFhLjc5NDguNzk0OCAwIDAgMCAuMzkyNy42ODEzbDUuODQyOCAzLjM2ODUtMS4wMDUzIDEuNzQzNGEuMDcxLjA3MSAwIDAgMS0uMDY2NC4wMzMybC00LjgzOS0yLjc5MTRhNC41MDQgNC41MDQgMCAwIDEtMi42NjAzLTYuNzA2NXptMTAuNTk4LTQuNDQ0N2E0LjQ4MDIgNC40ODAyIDAgMCAxIDIuODgxIDEuMDQ1NGwtLjE0MTkuMDgtNC43ODMtMi43NTgyYS43OTQ4Ljc5NDggMCAwIDAtLjc4MDYgMGwtNS44NDI4IDMuMzY4NXYtMi4zMzI0YS4wODA0LjA4MDQgMCAwIDEgLjAzMzItLjA2MTVsMy45Mi0yLjI2NGE0LjUwNCA0LjUwNCAwIDAgMSA0LjcxNDItLjA3NzN6bTkuNjY1NSA0LjEyNTRhNC40NzA4IDQuNDcwOCAwIDAgMSAuNTM0NiAzLjAxMzdsLS4xNDItLjA4NTItNC43ODMtMi43NTgyYS43NzEyLjc3MTIgMCAwIDAtLjc4MDYgMGwtNS44NDI4IDMuMzY4NXYtMi4zMzI0YS4wODA0LjA4MDQgMCAwIDEgLjAzMzItLjA2MTVsMy45Mi0yLjI2NGE0LjQ5OTIgNC40OTkyIDAgMCAxIDYuMTQwOCAxLjY1NXpNMTMuMjUgMTUuNjU5OWwtMy4yMy0xLjg2MjRWMTAuMDczbDMuMjMgMS44NjI0djMuNzI0NXptMS4yMjE1LTQuNDk4MS0zLjIzLTEuODYyNCAzLjIzLTEuODYyNCAzLjIzIDEuODYyNC0zLjIzIDEuODYyNHoiLz48L3N2Zz4=",
-    alt: "OpenAI Logo",
-  },
-  { src: "https://cdn.simpleicons.org/python/000000", alt: "Python Logo" },
-  { src: "https://cdn.simpleicons.org/vercel/000000", alt: "Vercel Logo" },
-  { src: "https://cdn.simpleicons.org/github/000000", alt: "GitHub Logo" },
-  { src: "https://cdn.simpleicons.org/anthropic/000000", alt: "Anthropic Logo" },
-  { src: "https://cdn.simpleicons.org/react/000000", alt: "React Logo" },
+  { src: "inline:nvidia", alt: "Nvidia Logo" },
+  { src: "inline:supabase", alt: "Supabase Logo" },
+  { src: "inline:openai", alt: "OpenAI Logo" },
+  { src: "inline:python", alt: "Python Logo" },
+  { src: "inline:vercel", alt: "Vercel Logo" },
+  { src: "inline:github", alt: "GitHub Logo" },
+  { src: "inline:anthropic", alt: "Anthropic Logo" },
+  { src: "inline:react", alt: "React Logo" },
 ];
 
 export default async function Home() {
@@ -48,7 +49,7 @@ export default async function Home() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <div className="block dark:hidden">
+      <div className="theme-hidden-vintage block dark:hidden">
         <GlowyWavesHero
           stats={homepageStats}
           badgeText={siteContent.homeHeroBadge}
@@ -57,17 +58,26 @@ export default async function Home() {
           description={siteContent.homeHeroDescription}
         />
       </div>
-      <div className="hidden dark:block">
+      <div className="theme-hidden-vintage hidden dark:block">
         <LampDemo
           stats={homepageStats}
           title={siteContent.homeHeroDarkTitle}
           description={siteContent.homeHeroDescription}
         />
       </div>
+      <div className="theme-only-vintage">
+        <PrismaHero
+          ctaHref="/courses"
+          ctaLabel="Kurslarni ko'rish"
+          description={siteContent.homeHeroDescription}
+          showNav={false}
+          title="Kings"
+        />
+      </div>
 
       <RoadmapSection />
 
-      <section className="cv-auto overflow-hidden bg-gray-50/50 py-16 dark:bg-gray-950/50 md:py-24">
+      <section className="theme-hidden-vintage cv-auto overflow-hidden bg-gray-50/50 py-16 dark:bg-gray-950/50 md:py-24">
         <div className="container mx-auto px-4 md:px-8">
           <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="max-w-3xl">
@@ -85,20 +95,15 @@ export default async function Home() {
               href="/courses"
               className="hidden shrink-0 items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:hover:bg-gray-900 md:inline-flex"
             >
-              Barchasini ko'ring <ArrowRight className="h-4 w-4" />
+              Barcha kurslarni ko'ring <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="flex snap-x snap-mandatory gap-6 overflow-x-auto pb-8 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <HomeCoursesCarousel>
             {courses.map((course) => (
-              <div
-                key={course.id}
-                className="w-[320px] shrink-0 snap-center md:w-[380px]"
-              >
-                <CourseCard {...course} />
-              </div>
+              <CourseCard key={course.id} {...course} />
             ))}
-          </div>
+          </HomeCoursesCarousel>
 
           <div className="mt-4 text-center md:hidden">
             <Link
@@ -111,7 +116,52 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="cv-auto bg-white py-16 dark:bg-black md:py-24">
+      <section className="theme-only-vintage cv-auto relative overflow-hidden bg-[#0d0906] py-16 text-stone-100 md:py-24">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(216,168,79,0.18),transparent_30%),radial-gradient(circle_at_84%_62%,rgba(20,184,166,0.11),transparent_26%)]" />
+        <div className="absolute inset-0 opacity-[0.16] [background-image:linear-gradient(rgba(216,168,79,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(216,168,79,0.1)_1px,transparent_1px)] [background-size:34px_34px]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-amber-200/20" />
+
+        <div className="container relative mx-auto px-4 md:px-8">
+          <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-amber-300/80">
+                {siteContent.homeCoursesEyebrow}
+              </p>
+              <h2 className="mt-3 text-4xl font-black tracking-tight text-stone-50 md:text-6xl">
+                {siteContent.homeCoursesTitle}
+              </h2>
+              <p className="mt-5 max-w-4xl text-base leading-8 text-stone-300/78 md:text-lg">
+                {siteContent.homeCoursesDescription}
+              </p>
+            </div>
+            <Link
+              href="/courses"
+              className="hidden shrink-0 items-center gap-2 rounded-full border border-amber-200/18 bg-black/35 px-6 py-3 text-sm font-black text-amber-100 shadow-[0_18px_55px_rgba(0,0,0,0.22)] ring-1 ring-white/[0.03] backdrop-blur transition-colors hover:border-amber-200/35 hover:bg-amber-200/10 md:inline-flex"
+            >
+              Barchasini ko'ring <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="rounded-[2rem] border border-amber-200/10 bg-black/20 px-0 py-4 shadow-[0_36px_120px_rgba(0,0,0,0.34)] ring-1 ring-white/[0.025]">
+            <HomeCoursesCarousel variant="vintage">
+              {courses.map((course) => (
+                <CourseCard key={course.id} variant="vintage" {...course} />
+              ))}
+            </HomeCoursesCarousel>
+          </div>
+
+          <div className="mt-6 text-center md:hidden">
+            <Link
+              href="/courses"
+              className="inline-flex items-center gap-2 rounded-full border border-amber-200/18 bg-black/35 px-5 py-2.5 text-sm font-black text-amber-100 backdrop-blur transition-colors hover:bg-amber-200/10"
+            >
+              Barcha kurslarni ko'ring <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="theme-hidden-vintage cv-auto bg-white py-16 dark:bg-black md:py-24">
         <div className="container mx-auto px-4 md:px-8">
           <div className="mb-10 max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
@@ -156,7 +206,12 @@ export default async function Home() {
         </div>
       </section>
 
-      <MapSection />
+      <VintageBentoEcosystem />
+
+      <div className="theme-hidden-vintage">
+        <MapSection />
+      </div>
+      <VintageGlobeSection />
 
       <section className="cv-auto relative border-t border-gray-200 bg-white py-16 dark:border-gray-800 dark:bg-black md:py-24">
         <div className="mx-auto max-w-4xl px-4 text-center">

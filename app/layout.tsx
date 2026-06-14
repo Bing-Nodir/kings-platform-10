@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import NavbarConditional from "@/components/NavbarConditional";
@@ -21,10 +22,11 @@ export default function RootLayout({
   return (
     <html lang="uz" suppressHydrationWarning>
       <head>
-        {/* Dark mode init: prevents flash of wrong theme on load */}
-        <script
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var root=document.documentElement;var t=localStorage.getItem('${THEME_STORAGE_KEY}')||'midnight';var resolved='midnight';if(t==='midnight'){resolved='midnight';localStorage.setItem('${LAST_DARK_THEME_STORAGE_KEY}','midnight');}else if(t==='dark'){resolved='dark';localStorage.setItem('${LAST_DARK_THEME_STORAGE_KEY}','dark');}else if(t==='light'){resolved='light';}else if(t==='system'){resolved=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}root.classList.toggle('dark',resolved!=='light');root.dataset.theme=resolved;}catch(e){}})()`,
+            __html: `(function(){try{var root=document.documentElement;var t=localStorage.getItem('${THEME_STORAGE_KEY}')||'midnight';var resolved='midnight';if(t==='vintage'){resolved='vintage';}else if(t==='midnight'){resolved='midnight';localStorage.setItem('${LAST_DARK_THEME_STORAGE_KEY}','midnight');}else if(t==='dark'){resolved='dark';localStorage.setItem('${LAST_DARK_THEME_STORAGE_KEY}','dark');}else if(t==='light'){resolved='light';}else if(t==='system'){resolved=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}root.classList.toggle('dark',resolved!=='light');root.dataset.theme=resolved;}catch(e){}})()`,
           }}
         />
       </head>

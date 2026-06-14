@@ -11,13 +11,7 @@ import {
 } from "lucide-react";
 import { requireAuthenticatedPage } from "@/lib/server/auth";
 import { getSecurityAuditLogs, getUserPreferences } from "@/lib/server/settings";
-
-function formatThemeLabel(theme: string) {
-  if (theme === "midnight") return "Midnight";
-  if (theme === "dark") return "Qorong'i";
-  if (theme === "light") return "Yorug'";
-  return "Tizim";
-}
+import { formatThemeLabel } from "@/lib/theme";
 
 function formatActivityLabel(action: string) {
   if (action === "profile_updated") return "Profil yangilandi";
@@ -94,7 +88,7 @@ export default async function SettingsPage() {
     },
     {
       href: "/settings/security#account-export",
-      title: "Account export",
+      title: "Akkauntni eksport qilish",
       description:
         "Profil, preferences, audit log va billing tarixini JSON arxiv sifatida yuklab oling.",
       icon: Globe2,
@@ -104,7 +98,7 @@ export default async function SettingsPage() {
     },
     {
       href: "/settings/billing",
-      title: "Billing va access",
+      title: "To'lov va kirish huquqlari",
       description:
         "Buyurtmalar tarixi, receipt yuklash va support ticketlar bir joyda boshqariladi.",
       icon: CreditCard,
@@ -122,7 +116,7 @@ export default async function SettingsPage() {
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/90 px-4 py-1.5 text-sm font-semibold text-blue-700 shadow-sm dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
                 <Sparkles className="h-4 w-4" />
-                Personal control center
+                Shaxsiy boshqaruv markazi
               </div>
               <h1 className="mt-5 text-3xl font-black tracking-tight text-gray-950 dark:text-white md:text-5xl">
                 {displayName} uchun kuchli settings workspace
@@ -215,7 +209,7 @@ export default async function SettingsPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
-                Security trail
+                Xavfsizlik tarixi
               </p>
               <h2 className="mt-2 text-2xl font-black text-gray-950 dark:text-white">
                 So'nggi account faoliyati
@@ -269,7 +263,7 @@ export default async function SettingsPage() {
             </div>
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
-                Account snapshot
+                Akkount holati
               </p>
               <h2 className="mt-1 text-xl font-black text-gray-950 dark:text-white">
                 Hozirgi holat

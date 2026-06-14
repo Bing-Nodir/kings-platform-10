@@ -362,6 +362,7 @@ export const courses: Course[] = [
     students: 1670,
     instructor: "Mirshod Juraev",
     heroGradient: "from-indigo-600 via-blue-500 to-cyan-400",
+    cardImage: "/media/courses/sql-querying-reporting/sql-querying-reporting-cover.png",
     outcomes: [
       "SELECT, WHERE, GROUP BY va JOIN operatorlarini ishonch bilan ishlatasiz",
       "Analitik savollarni SQL logikasiga to'g'ri tarjima qilasiz",
@@ -412,6 +413,7 @@ export const courses: Course[] = [
     students: 1180,
     instructor: "Mirshod Juraev",
     heroGradient: "from-slate-800 via-slate-700 to-blue-600",
+    cardImage: "/media/courses/database-design-foundations/database-design-fundamentals-cover.png",
     outcomes: [
       "ER diagram va relational schema tuzishni bilasiz",
       "Primary key, foreign key va integrity rule'larni to'g'ri qo'llaysiz",

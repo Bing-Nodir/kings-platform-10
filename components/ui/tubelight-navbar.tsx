@@ -59,8 +59,8 @@ export function NavBar({ items, className }: NavBarProps) {
     >
       <div
         className={cn(
-          "flex items-center gap-3 rounded-full border border-border bg-background/75 px-1 py-1 shadow-lg backdrop-blur-lg",
-          isMobile && "justify-between",
+          "flex items-center rounded-full border border-border bg-background/75 px-1 py-1 shadow-lg backdrop-blur-lg",
+          isMobile ? "justify-between gap-1" : "gap-3",
         )}
       >
         {items.map((item) => {
@@ -79,7 +79,7 @@ export function NavBar({ items, className }: NavBarProps) {
               className={cn(
                 "relative cursor-pointer rounded-full px-6 py-2 text-sm font-semibold transition-colors",
                 "text-foreground/80 hover:text-primary",
-                isMobile && "flex-1 px-4 text-center",
+                isMobile && "flex min-w-0 flex-1 justify-center px-2 text-center",
                 isActive && "bg-muted text-primary",
               )}
             >

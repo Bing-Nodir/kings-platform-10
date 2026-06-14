@@ -11,6 +11,12 @@ import {
   Sparkles,
   Clock,
 } from "lucide-react";
+import { MissionSuccessDialog } from "@/components/ui/mission-success-dialog";
+import {
+  THEME_EVENT,
+  getStoredThemePreference,
+  resolveThemePreference,
+} from "@/lib/theme";
 import type { CourseQuiz } from "@/lib/quizzes";
 
 interface QuizWidgetProps {
@@ -27,6 +33,14 @@ function formatTime(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
+function isVintageThemeSnapshot() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return resolveThemePreference(getStoredThemePreference()) === "vintage";
 }
 
 export default function QuizWidget({
@@ -46,6 +60,8 @@ export default function QuizWidget({
   const [attempts, setAttempts] = useState(0);
   const [startTime, setStartTime] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  const [isVintageTheme, setIsVintageTheme] = useState(false);
+  const [missionDialogOpen, setMissionDialogOpen] = useState(false);
 
   const current = quiz.questions[currentIdx];
   const total = quiz.questions.length;
@@ -54,6 +70,22 @@ export default function QuizWidget({
   const handleChallengeTimeout = useEffectEvent(() => {
     void finishQuiz();
   });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const syncTheme = () => setIsVintageTheme(isVintageThemeSnapshot());
+
+    syncTheme();
+    window.addEventListener("storage", syncTheme);
+    window.addEventListener(THEME_EVENT, syncTheme);
+    mediaQuery.addEventListener("change", syncTheme);
+
+    return () => {
+      window.removeEventListener("storage", syncTheme);
+      window.removeEventListener(THEME_EVENT, syncTheme);
+      mediaQuery.removeEventListener("change", syncTheme);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isEnrolled) {
@@ -139,6 +171,10 @@ export default function QuizWidget({
     const passed = percent >= quiz.passingScore;
 
     setPhase("result");
+
+    if (passed && isVintageTheme) {
+      setMissionDialogOpen(true);
+    }
 
     if (bestScore === null || percent > bestScore) {
       setBestScore(percent);
@@ -353,7 +389,8 @@ export default function QuizWidget({
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center p-6">
+    <>
+      <div className="flex h-full flex-col items-center justify-center p-6">
       <div className="w-full max-w-md text-center">
         <div
           className={`mx-auto mb-6 flex h-28 w-28 flex-col items-center justify-center rounded-full border-4 shadow-lg ${
@@ -439,6 +476,25 @@ export default function QuizWidget({
           <p className="mt-3 text-xs text-gray-400">Natija saqlanmoqda...</p>
         )}
       </div>
-    </div>
+      </div>
+      <MissionSuccessDialog
+        badgeIcon={<Trophy className="h-3 w-3" />}
+        badgeText="Dars yakunlandi"
+        description="Siz dars bo'yicha vazifalarni muvaffaqiyatli bajardingiz. Keyingi bosqichga o'tishdan oldin bugungi yutug'ingizni nomlab qo'ying."
+        imageUrl="https://www.thiings.co/_next/image?url=https%3A%2F%2Flftz25oez4aqbxpq.public.blob.vercel-storage.com%2Fimage-HmiK2xmQ3e7Xtx7v2gRFAWYob8haFe.png&w=320&q=75"
+        inputPlaceholder="Masalan: SQL joinlarni tushundim"
+        isOpen={missionDialogOpen}
+        onClose={() => setMissionDialogOpen(false)}
+        onPrimaryClick={(value) => {
+          if (value.trim()) {
+            window.localStorage.setItem("kings-last-mission-note", value.trim());
+          }
+        }}
+        onSecondaryClick={() => {}}
+        primaryButtonText="Yutuqni saqlash"
+        secondaryButtonText="Keyinroq"
+        title="A'lo natija!"
+      />
+    </>
   );
 }

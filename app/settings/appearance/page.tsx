@@ -2,13 +2,7 @@ import { Globe, Palette } from "lucide-react";
 import AppearanceSettingsForm from "@/components/settings/AppearanceSettingsForm";
 import { requireAuthenticatedPage } from "@/lib/server/auth";
 import { getUserPreferences } from "@/lib/server/settings";
-
-function formatThemeLabel(theme: string) {
-  if (theme === "midnight") return "Midnight";
-  if (theme === "dark") return "Qorong'i";
-  if (theme === "light") return "Yorug'";
-  return "Tizim";
-}
+import { formatThemeLabel } from "@/lib/theme";
 
 export default async function SettingsAppearancePage() {
   const { supabase, user } = await requireAuthenticatedPage(
@@ -21,7 +15,7 @@ export default async function SettingsAppearancePage() {
       <section className="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950">
         <div className="bg-[radial-gradient(circle_at_top_right,rgba(147,51,234,0.16),transparent_30%),linear-gradient(180deg,#ffffff_0%,#faf5ff_100%)] p-6 dark:bg-[radial-gradient(circle_at_top_right,rgba(147,51,234,0.26),transparent_30%),linear-gradient(180deg,#020617_0%,#111827_100%)] md:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-400">
-            Appearance settings
+            Ko'rinish sozlamalari
           </p>
           <h1 className="mt-3 text-3xl font-black tracking-tight text-gray-950 dark:text-white md:text-4xl">
             Ko'rinish va til boshqaruvi

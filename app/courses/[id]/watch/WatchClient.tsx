@@ -24,9 +24,15 @@ import CourseDiscussionPanel from "@/components/CourseDiscussionPanel";
 import CourseQuestionPanel from "@/components/CourseQuestionPanel";
 import CourseLessonPlayer from "@/components/CourseLessonPlayer";
 import QuizWidget from "@/components/QuizWidget";
+import { MissionSuccessDialog } from "@/components/ui/mission-success-dialog";
 import type { Course } from "@/lib/catalog";
 import { getMasteryLevel } from "@/lib/course-experience";
 import { getQuizByCourseId } from "@/lib/quizzes";
+import {
+  THEME_EVENT,
+  getStoredThemePreference,
+  resolveThemePreference,
+} from "@/lib/theme";
 import { useCourseContentRealtime } from "@/hooks/useCourseContentRealtime";
 
 type Tab =
@@ -48,6 +54,14 @@ interface WatchClientProps {
   canUseMentor: boolean;
   checkoutHref: string;
   viewerWatermark: string;
+}
+
+function isVintageThemeSnapshot() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return resolveThemePreference(getStoredThemePreference()) === "vintage";
 }
 
 export default function WatchClient({
@@ -78,6 +92,10 @@ export default function WatchClient({
   const justLoadedRef = useRef(false);
   const [trackedProgress, setTrackedProgress] = useState(initialProgress);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [isVintageTheme, setIsVintageTheme] = useState(false);
+  const [missionDialogOpen, setMissionDialogOpen] = useState(false);
+  const [completedMissionTitle, setCompletedMissionTitle] = useState("");
+  const shownMissionKeysRef = useRef<Set<string>>(new Set());
   const [openModules, setOpenModules] = useState<Set<string>>(
     new Set([
       allLessons.find((lesson) => lesson.id === initialLessonId)?.moduleId ??
@@ -106,6 +124,22 @@ export default function WatchClient({
   const activeLessonContentUpdated =
     latestEvent &&
     (!latestEvent.lesson_id || latestEvent.lesson_id === activeLesson.id);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const syncTheme = () => setIsVintageTheme(isVintageThemeSnapshot());
+
+    syncTheme();
+    window.addEventListener("storage", syncTheme);
+    window.addEventListener(THEME_EVENT, syncTheme);
+    mediaQuery.addEventListener("change", syncTheme);
+
+    return () => {
+      window.removeEventListener("storage", syncTheme);
+      window.removeEventListener(THEME_EVENT, syncTheme);
+      mediaQuery.removeEventListener("change", syncTheme);
+    };
+  }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -315,6 +349,11 @@ export default function WatchClient({
       trackedProgress,
       Math.round(((activeLessonIndex + 1) / Math.max(allLessons.length, 1)) * 100)
     );
+    const missionKey = `${course.id}:${activeLesson.id}`;
+    const isNewCompletion =
+      activeLessonIndex + 1 > completedLessonsFromProgress &&
+      !shownMissionKeysRef.current.has(missionKey);
+
     setTrackedProgress(nextProgress);
     setSaveState("saved");
 
@@ -343,6 +382,12 @@ export default function WatchClient({
       if (typeof payload?.progressPercent === "number") {
         setTrackedProgress(payload.progressPercent);
       }
+
+      if (isVintageTheme && isNewCompletion) {
+        shownMissionKeysRef.current.add(missionKey);
+        setCompletedMissionTitle(activeLesson.title);
+        setMissionDialogOpen(true);
+      }
     } catch {
       setTrackedProgress(previousProgress);
       setSaveState("error");
@@ -360,6 +405,7 @@ export default function WatchClient({
           : `${completedLessons} ta dars tugallangan deb belgilangan`;
 
   return (
+    <>
     <div className="flex flex-1 flex-col lg:flex-row">
       <main className="flex w-full flex-col lg:w-[calc(100%-350px)] xl:w-[calc(100%-400px)]">
         <div className="overflow-hidden border-b border-gray-200 bg-black dark:border-gray-800">
@@ -857,5 +903,29 @@ export default function WatchClient({
         </div>
       </aside>
     </div>
+    <MissionSuccessDialog
+      badgeIcon={<CheckCircle2 className="h-3 w-3" />}
+      badgeText="Dars bajarildi"
+      description={`"${completedMissionTitle || activeLesson.title}" darsi muvaffaqiyatli saqlandi. Keyingi bosqichga o'tishdan oldin o'rgangan asosiy fikringizni belgilab qo'ying.`}
+      imageUrl="https://www.thiings.co/_next/image?url=https%3A%2F%2Flftz25oez4aqbxpq.public.blob.vercel-storage.com%2Fimage-HmiK2xmQ3e7Xtx7v2gRFAWYob8haFe.png&w=320&q=75"
+      inputPlaceholder="Bugungi asosiy xulosa"
+      isOpen={missionDialogOpen}
+      onClose={() => setMissionDialogOpen(false)}
+      onPrimaryClick={(value) => {
+        const note = value.trim();
+
+        if (note) {
+          window.localStorage.setItem(
+            `kings-lesson-mission-note:${course.id}:${activeLesson.id}`,
+            note
+          );
+        }
+      }}
+      onSecondaryClick={() => {}}
+      primaryButtonText="Xulosani saqlash"
+      secondaryButtonText="Keyingi darsga o'taman"
+      title="A'lo bajarildi!"
+    />
+    </>
   );
 }

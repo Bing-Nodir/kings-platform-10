@@ -804,15 +804,15 @@ export const getLiveCompanyStatsData = cache(async (): Promise<CompanyStat[]> =>
 
   return [
     {
-      label: "Flagship kurslar",
+      label: "Asosiy kurslar",
       value: formatCount(courses.length, { plus: courses.length >= 8 }),
     },
     {
-      label: "Core mentorlar",
+      label: "Asosiy mentorlar",
       value: formatCount(mentors.length),
     },
     {
-      label: "Preview darslar",
+      label: "Bepul darslar",
       value: formatCount(previewLessonCount, { plus: previewLessonCount >= 20 }),
     },
     {

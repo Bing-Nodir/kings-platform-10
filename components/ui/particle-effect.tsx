@@ -32,8 +32,8 @@ interface MouseState {
 }
 
 // --- Configuration Constants ---
-const PARTICLE_DENSITY = 0.00010; // Zichlikni biroz kamaytirdik (yengil ishlashi uchun)
-const BG_PARTICLE_DENSITY = 0.00004;
+const PARTICLE_DENSITY = 0.00014;
+const BG_PARTICLE_DENSITY = 0.00008;
 const MOUSE_RADIUS = 180;
 const RETURN_SPEED = 0.08;
 const DAMPING = 0.90;
@@ -100,7 +100,7 @@ export function ParticleEffect() {
         originY: y,
         vx: 0,
         vy: 0,
-        size: randomRange(1, 2.5),
+        size: randomRange(1.2, 3),
         // Sayt ekotizimiga mos ranglar (Cyan, Purple, White)
         color: Math.random() > 0.8 ? 'rgba(6, 182, 212, 1)' : (Math.random() > 0.5 ? 'rgba(168, 85, 247, 1)' : 'rgba(255, 255, 255, 1)'),
         angle: Math.random() * Math.PI * 2,
@@ -117,10 +117,10 @@ export function ParticleEffect() {
       newBgParticles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.2,
-        vy: (Math.random() - 0.5) * 0.2,
-        size: randomRange(0.5, 1.5),
-        alpha: randomRange(0.1, 0.4),
+        vx: (Math.random() - 0.5) * 0.24,
+        vy: (Math.random() - 0.5) * 0.24,
+        size: randomRange(0.7, 1.8),
+        alpha: randomRange(0.18, 0.52),
         phase: Math.random() * Math.PI * 2
       });
     }

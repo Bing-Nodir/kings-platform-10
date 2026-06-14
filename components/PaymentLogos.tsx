@@ -97,25 +97,20 @@ export function PaymentLogo({ brand, className = "", compact = false }: PaymentL
       role="img"
     >
       <rect width="116" height="36" rx="10" fill="white" />
-      <path d="M24 25.5 29.2 10.5h6.2l-5.2 15h-6.2Z" fill="#1A1F71" />
-      <path
-        d="M48.8 10.8c-1.2-.5-3.1-1-5.4-1-5.9 0-10 3-10.1 7.3 0 3.2 3 5 5.3 6.1 2.3 1.1 3.1 1.8 3.1 2.8 0 1.5-1.9 2.2-3.7 2.2-2.5 0-3.8-.3-5.8-1.2l-.8-.4-.9 5c1.4.6 4 .1 6.6.1 6.3 0 10.3-3 10.4-7.6 0-2.5-1.6-4.5-5-6.1-2.1-1-3.4-1.7-3.4-2.7 0-.9 1.1-1.9 3.4-1.9 2 0 3.5.4 4.6.9l.6.3.9-4.8Z"
-        fill="#1A1F71"
-        transform="scale(.7) translate(25 3)"
-      />
       <text
-        x="38"
-        y="25"
+        x="58"
+        y="25.5"
         fill="#1A1F71"
         fontFamily="Arial Black, Arial, Helvetica, sans-serif"
-        fontSize="20"
+        fontSize="21"
         fontStyle="italic"
         fontWeight="900"
-        letterSpacing="-1"
+        letterSpacing="-1.2"
+        textAnchor="middle"
       >
         VISA
       </text>
-      <path d="M88 10.5h10l-2 4.3h-10l2-4.3Z" fill="#F7B600" />
+      <path d="M87 10.5h10l-2 4.3H85l2-4.3Z" fill="#F7B600" />
     </svg>
   );
 }

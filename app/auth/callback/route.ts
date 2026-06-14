@@ -15,7 +15,19 @@ export async function GET(request: Request) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      const destination = isPrimaryAdminEmail(user?.email)
+      let isAdmin = isPrimaryAdminEmail(user?.email);
+
+      if (user && !isAdmin) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        isAdmin = profile?.role === "admin";
+      }
+
+      const destination = isAdmin
         ? next.startsWith("/admin")
           ? next
           : "/admin"

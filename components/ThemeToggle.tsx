@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Sparkles, Sun } from "lucide-react";
+import { Moon, Palette, Sparkles, Sun } from "lucide-react";
 import { MouseEvent, useEffect, useSyncExternalStore, useState } from "react";
 import {
   THEME_EVENT,
@@ -91,7 +91,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white/80 text-gray-800 shadow-xl backdrop-blur-sm transition-all hover:scale-110 active:scale-95 dark:border-gray-800 dark:bg-gray-950/80 dark:text-gray-200"
+      className="fixed bottom-24 right-4 z-50 flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white/80 text-gray-800 shadow-xl backdrop-blur-sm transition-all hover:scale-110 active:scale-95 dark:border-gray-800 dark:bg-gray-950/80 dark:text-gray-200 sm:bottom-6 sm:right-6"
       aria-label="Sayt theme rejimini almashtirish"
     >
       <AnimatePresence>
@@ -117,6 +117,8 @@ export default function ThemeToggle() {
       <span className="relative z-10 flex h-full w-full items-center justify-center">
         {!mounted ? (
           <div className="h-5 w-5" />
+        ) : currentTheme === "vintage" ? (
+          <Palette className="h-5 w-5 text-amber-500" />
         ) : currentTheme === "midnight" ? (
           <Sparkles className="h-5 w-5 text-cyan-400" />
         ) : currentTheme === "dark" ? (

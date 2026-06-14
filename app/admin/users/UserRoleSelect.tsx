@@ -23,9 +23,6 @@ export default function UserRoleSelect({
 }) {
   const [isPending, startTransition] = useTransition();
   const isPrimaryAdmin = isPrimaryAdminEmail(email);
-  const roleOptions = ROLE_OPTIONS.filter(
-    (option) => option.value !== "admin" || isPrimaryAdmin || currentRole === "admin"
-  );
 
   return (
     <select
@@ -46,9 +43,9 @@ export default function UserRoleSelect({
       }}
       className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none transition disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300"
     >
-      {roleOptions.map((option) => (
+      {ROLE_OPTIONS.map((option) => (
         <option key={option.value} value={option.value}>
-          {option.value === "admin" && !isPrimaryAdmin ? "Admin (restricted)" : option.label}
+          {option.label}
         </option>
       ))}
     </select>

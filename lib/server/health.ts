@@ -1,5 +1,4 @@
 import { lookup } from "node:dns/promises";
-import { getSiteDocumentOverview } from "@/lib/content-store";
 import { getAnthropicConfig, hasConfiguredAnthropicKey } from "@/lib/server/env";
 import { createPublicClient } from "@/utils/supabase/public";
 import {
@@ -202,6 +201,38 @@ async function checkSupabaseTable(
   });
 }
 
+async function getLiveSiteDocumentOverview() {
+  const supabase = createPublicClient();
+  const { data, error } = await supabase
+    .from("site_documents")
+    .select("kind")
+    .eq("status", "published")
+    .limit(1_000);
+
+  if (error) {
+    throw error;
+  }
+
+  const byKind: Partial<Record<string, number>> = {};
+  for (const row of data ?? []) {
+    const kind = typeof row.kind === "string" ? row.kind : "unknown";
+    byKind[kind] = (byKind[kind] ?? 0) + 1;
+  }
+
+  const totalPublished = data?.length ?? 0;
+
+  return {
+    available: true,
+    source: totalPublished > 0 ? ("database" as const) : ("seed" as const),
+    totalPublished,
+    byKind,
+    detail:
+      totalPublished > 0
+        ? `${totalPublished} ta published document topildi.`
+        : "site_documents bo'sh, seed fallback ishlayapti.",
+  };
+}
+
 function assertEnvCheck(): HealthCheck {
   try {
     getSupabasePublicConfig();
@@ -247,8 +278,9 @@ function assertAdminEnvCheck(): HealthCheck {
 }
 
 function assertDatabaseConnectionEnvCheck(): HealthCheck {
-  const keys = ["DATABASE_URL", "DIRECT_URL", "DIRECT_DATABASE_URL_IPV6"];
-  const configured = keys.filter((key) => {
+  const requiredKeys = ["DATABASE_URL", "DIRECT_URL"];
+  const optionalKeys = ["DIRECT_DATABASE_URL_IPV6"];
+  const configuredRequired = requiredKeys.filter((key) => {
     const value = process.env[key]?.trim() ?? "";
     return (
       value &&
@@ -256,7 +288,15 @@ function assertDatabaseConnectionEnvCheck(): HealthCheck {
       !value.toLowerCase().includes("placeholder")
     );
   });
-  const missing = keys.filter((key) => !configured.includes(key));
+  const configuredOptional = optionalKeys.filter((key) => {
+    const value = process.env[key]?.trim() ?? "";
+    return (
+      value &&
+      !value.includes("[YOUR-PASSWORD]") &&
+      !value.toLowerCase().includes("placeholder")
+    );
+  });
+  const missing = requiredKeys.filter((key) => !configuredRequired.includes(key));
 
   if (missing.length > 0) {
     return {
@@ -272,7 +312,10 @@ function assertDatabaseConnectionEnvCheck(): HealthCheck {
     key: "database-connection-env",
     label: "Postgres connection URLs",
     ready: true,
-    detail: "Postgres pooler/direct connection URL'lari to'ldirilgan.",
+    detail:
+      configuredOptional.length > 0
+        ? "Postgres pooler/direct connection URL'lari to'ldirilgan, IPv6 direct URL ham mavjud."
+        : "Postgres pooler/direct connection URL'lari to'ldirilgan. IPv6 direct URL optional.",
   };
 }
 
@@ -456,7 +499,7 @@ export async function getSystemHealthReport(): Promise<SystemHealthReport> {
   });
 
   const siteDocuments = supabaseRestReady && siteDocumentsTableReady
-    ? await getSiteDocumentOverview().catch((error) => ({
+    ? await getLiveSiteDocumentOverview().catch((error) => ({
         available: false,
         source: "seed" as const,
         totalPublished: 0,

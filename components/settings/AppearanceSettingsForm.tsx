@@ -2,7 +2,7 @@
 
 import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Globe, Monitor, Moon, Save, Sparkles, Sun } from "lucide-react";
+import { Check, Globe, Monitor, Moon, Palette, Save, Sparkles, Sun } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 import { LOCALE_FLAGS, LOCALE_LABELS } from "@/lib/i18n";
 import { applyThemePreference, type ThemePreference } from "@/lib/theme";
@@ -22,6 +22,12 @@ const themes: Array<{
     label: "Midnight",
     description: "Ko'kimtir premium tun atmosferasi",
     icon: Sparkles,
+  },
+  {
+    id: "vintage",
+    label: "Vintage",
+    description: "Video fonli, iliq editorial main page uslubi",
+    icon: Palette,
   },
   { id: "system", label: "Tizim", description: "Qurilma sozlamasiga mos", icon: Monitor },
 ];
@@ -154,7 +160,7 @@ export default function AppearanceSettingsForm({
           Oxirgi sync: {syncLabel}
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {themes.map((option) => (
             <button
               key={option.id}

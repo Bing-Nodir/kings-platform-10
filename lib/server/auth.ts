@@ -90,12 +90,12 @@ export async function isAdminUser(
   userId: string,
   email?: string | null
 ) {
-  if (!isPrimaryAdminEmail(email)) {
-    return false
+  if (isPrimaryAdminEmail(email)) {
+    await ensurePrimaryAdminRole(supabase, userId, email)
+    return true
   }
 
-  await ensurePrimaryAdminRole(supabase, userId, email)
-  return true
+  return (await fetchRole(supabase, userId)) === "admin"
 }
 
 export async function isInstructorUser(

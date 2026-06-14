@@ -6,11 +6,20 @@ export const THEME_PREFERENCES = [
   "light",
   "dark",
   "midnight",
+  "vintage",
   "system",
 ] as const;
 
 export type ThemePreference = (typeof THEME_PREFERENCES)[number];
-export type ResolvedThemeMode = "light" | "dark" | "midnight";
+export type ResolvedThemeMode = "light" | "dark" | "midnight" | "vintage";
+
+export function formatThemeLabel(theme: string) {
+  if (theme === "vintage") return "Vintage";
+  if (theme === "midnight") return "Midnight";
+  if (theme === "dark") return "Qorong'i";
+  if (theme === "light") return "Yorug'";
+  return "Tizim";
+}
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -31,7 +40,7 @@ export function getStoredThemePreference(): ThemePreference {
 
 export function getLastDarkThemePreference(): Exclude<
   ThemePreference,
-  "light" | "system"
+  "light" | "system" | "vintage"
 > {
   if (!isBrowser()) {
     return "dark";
@@ -44,6 +53,10 @@ export function getLastDarkThemePreference(): Exclude<
 export function resolveThemePreference(
   theme: ThemePreference
 ): ResolvedThemeMode {
+  if (theme === "vintage") {
+    return "vintage";
+  }
+
   if (theme === "midnight") {
     return "midnight";
   }
@@ -95,5 +108,10 @@ export function toggleThemePreference() {
     return;
   }
 
-  applyThemePreference("light");
+  if (resolved === "vintage") {
+    applyThemePreference("light");
+    return;
+  }
+
+  applyThemePreference("vintage");
 }

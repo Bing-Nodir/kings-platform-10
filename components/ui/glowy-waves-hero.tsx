@@ -337,7 +337,7 @@ frequency: 0.004,
 
   return (
     <section
-      className="relative isolate flex min-h-[calc(100vh-4rem)] w-full items-center justify-center overflow-hidden bg-background"
+      className="relative isolate flex min-h-[calc(100svh-5rem)] w-full items-center justify-center overflow-hidden bg-background sm:min-h-[calc(100svh-6rem)]"
       role="region"
       aria-label="Kings Education hero section"
     >
@@ -353,7 +353,7 @@ frequency: 0.004,
         <div className="absolute top-1/2 left-1/4 h-[400px] w-[400px] rounded-full bg-blue-500/[0.05] blur-[150px] dark:bg-blue-500/[0.1]" />
       </div>
 
-      <div className="relative z-[60] mx-auto flex w-full max-w-6xl pointer-events-auto flex-col items-center px-6 py-12 text-center md:px-8 lg:px-12">
+      <div className="relative z-[60] mx-auto flex w-full max-w-6xl pointer-events-auto flex-col items-center px-6 py-[clamp(2.5rem,7svh,5.5rem)] text-center md:px-8 lg:px-12">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -370,7 +370,7 @@ frequency: 0.004,
 
           <motion.h1
             variants={itemVariants}
-            className="mb-6 text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl"
+            className="mb-6 text-balance text-[clamp(2.35rem,7vw,4.75rem)] font-extrabold leading-[1.04] tracking-tight text-foreground"
           >
             {titlePrefix}{" "}
             <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
@@ -380,7 +380,7 @@ frequency: 0.004,
 
           <motion.p
             variants={itemVariants}
-            className="mx-auto mb-10 max-w-3xl text-lg text-foreground/70 md:text-xl"
+            className="mx-auto mb-10 w-full max-w-[22rem] text-balance text-[clamp(1rem,2vw,1.25rem)] leading-relaxed text-foreground/70 sm:max-w-3xl"
           >
             {description}
           </motion.p>
@@ -392,7 +392,7 @@ frequency: 0.004,
             <Link
               href="/courses"
               aria-label="Kurslar sahifasini ochish"
-              className="relative z-[100] group inline-flex h-14 items-center justify-center gap-2 rounded-full bg-blue-600 px-8 text-base font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-blue-500/30 active:scale-95 cursor-pointer"
+              className="relative z-[100] group inline-flex h-14 w-full max-w-[22rem] items-center justify-center gap-2 rounded-full bg-blue-600 px-6 text-base font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-blue-500/30 active:scale-95 cursor-pointer sm:w-auto sm:px-8"
             >
               <BookOpen className="h-5 w-5" />
               Kurslarni ko&apos;rish
@@ -403,11 +403,11 @@ frequency: 0.004,
             </Link>
             <Link
               href="/shop"
-              aria-label="Marketplace sahifasini ochish"
-              className="relative z-[100] inline-flex h-14 items-center justify-center gap-2 rounded-full border border-border/40 bg-background/60 px-8 text-base font-semibold text-foreground/80 shadow-lg backdrop-blur transition-all hover:bg-background/70 active:scale-95 dark:border-border/50 dark:bg-background/40 dark:text-foreground/70 dark:hover:bg-background/50 cursor-pointer"
+              aria-label="Do'kon sahifasini ochish"
+              className="relative z-[100] inline-flex h-14 w-full max-w-[22rem] items-center justify-center gap-2 rounded-full border border-border/40 bg-background/60 px-6 text-base font-semibold text-foreground/80 shadow-lg backdrop-blur transition-all hover:bg-background/70 active:scale-95 dark:border-border/50 dark:bg-background/40 dark:text-foreground/70 dark:hover:bg-background/50 cursor-pointer sm:w-auto sm:px-8"
             >
               <ShoppingBag className="h-5 w-5" />
-              Marketplace
+              Do'kon
             </Link>
           </motion.div>
 
@@ -427,7 +427,7 @@ frequency: 0.004,
 
           <motion.div
             variants={statsVariants}
-            className="grid gap-4 rounded-3xl border border-border/30 bg-background/40 p-6 backdrop-blur-md dark:border-border/60 dark:bg-background/40 sm:grid-cols-3"
+            className="grid w-full max-w-[22rem] gap-4 rounded-3xl border border-border/30 bg-background/40 p-5 backdrop-blur-md dark:border-border/60 dark:bg-background/40 min-[560px]:max-w-3xl min-[560px]:grid-cols-3 sm:p-6"
           >
             {stats.map((stat) => (
               <motion.div

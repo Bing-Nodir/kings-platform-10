@@ -81,19 +81,19 @@ export default async function Navbar() {
         </Link>
       </div>
 
-      <div className="fixed right-4 top-4 z-50 flex items-center gap-2 sm:hidden">
+      <div className="fixed right-8 top-4 z-50 flex items-center gap-2 sm:hidden">
         <LanguageSwitcher compact />
         <Link
           href="/shop"
-          aria-label="Marketplace"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-lg backdrop-blur-lg transition-colors hover:text-primary"
+          aria-label="Do'kon"
+          className="hidden h-10 w-10 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-lg backdrop-blur-lg transition-colors hover:text-primary"
         >
           <ShoppingCart className="h-4 w-4" />
         </Link>
         <Link
           href="/search"
           aria-label="Qidirish"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-lg backdrop-blur-lg transition-colors hover:text-primary"
+          className="hidden h-10 w-10 items-center justify-center rounded-full border border-border bg-background/80 text-foreground shadow-lg backdrop-blur-lg transition-colors hover:text-primary"
         >
           <Search className="h-4 w-4" />
         </Link>

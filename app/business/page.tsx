@@ -14,7 +14,9 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import BusinessPixelateWipe from "@/components/BusinessPixelateWipe";
 import Footer from "@/components/Footer";
+import VintageBusinessCta from "@/components/VintageBusinessCta";
 import {
   getBusinessBenefitsData,
   getBusinessPlansData,
@@ -65,40 +67,46 @@ export default async function BusinessPage() {
   return (
     <>
       <main className="min-h-screen">
-        <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 px-4 py-20 text-white md:py-28">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_60%_0%,rgba(255,255,255,0.15),transparent_60%)]" />
-          <div className="relative mx-auto max-w-5xl text-center">
-            <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
-              <Building2 className="h-4 w-4" /> Korporativ Ta'lim Yechimi
-            </span>
-            <h1 className="text-4xl font-black leading-tight md:text-5xl lg:text-6xl">
-              Jamoangizni <span className="text-yellow-300">professional</span>
-              <br />
-              darajaga yetkazing
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/80">
-              Data Analytics, AI, Power BI, SQL va ACCA IFRS bo'yicha professional
-              kurslar, korporativ tarifda, real analytics va AI Mentor bilan.
-            </p>
-            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-base font-semibold text-blue-700 shadow-xl transition-all hover:bg-blue-50"
-              >
-                Bepul demo so'rash <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#plans"
-                className="inline-flex items-center gap-2 rounded-full border border-white/30 px-8 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/10"
-              >
-                Narxlarni ko'rish
-              </Link>
-              <Link
-                href="/instructor"
-                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-300/20 px-8 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-emerald-300/30"
-              >
-                Instructor bo'lish <GraduationCap className="h-4 w-4" />
-              </Link>
+        <section className="relative flex min-h-[calc(100svh-5rem)] items-center overflow-hidden bg-slate-950 px-4 py-[clamp(4rem,9svh,7rem)] text-white sm:min-h-[calc(100svh-6rem)]">
+          <BusinessPixelateWipe />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_52%,rgba(2,6,23,0.94)_0%,rgba(2,6,23,0.86)_34%,rgba(2,6,23,0.58)_58%,rgba(2,6,23,0.8)_100%),linear-gradient(90deg,rgba(2,6,23,0.88),rgba(2,6,23,0.42)_48%,rgba(2,6,23,0.8)),radial-gradient(ellipse_at_50%_20%,rgba(255,255,255,0.14),transparent_56%)]" />
+          <div className="absolute inset-x-0 top-0 h-px bg-white/20" />
+          <div className="relative z-10 mx-auto w-full min-w-0 max-w-5xl text-center">
+            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700">
+              <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
+                <Building2 className="h-4 w-4" /> Korporativ Ta'lim Yechimi
+              </span>
+              <h1 className="mx-auto max-w-[23rem] break-words text-[clamp(2.2rem,9.5vw,3.75rem)] font-black leading-tight sm:max-w-none sm:text-5xl lg:text-6xl">
+                Jamoangizni{" "}
+                <span className="text-amber-300">professional</span>
+                <br />
+                darajaga <span className="block sm:inline">yetkazing</span>
+              </h1>
+              <p className="mx-auto mt-6 w-full max-w-[22rem] text-base leading-relaxed text-white/80 sm:max-w-2xl sm:text-lg">
+                Data Analytics, AI, Power BI, SQL va ACCA IFRS bo'yicha
+                professional kurslar, korporativ tarifda, real analytics va AI
+                Mentor bilan.
+              </p>
+              <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                <Link
+                  href="/contact"
+                  className="inline-flex w-full max-w-[19.5rem] items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-base font-semibold text-slate-900 shadow-xl transition-all hover:bg-blue-50 sm:w-auto sm:max-w-none sm:px-8"
+                >
+                  Bepul demo so'rash <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="#plans"
+                  className="inline-flex w-full max-w-[19.5rem] items-center justify-center gap-2 rounded-full border border-white/30 px-6 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/10 sm:w-auto sm:max-w-none sm:px-8"
+                >
+                  Narxlarni ko'rish
+                </Link>
+                <Link
+                  href="/instructor"
+                  className="inline-flex w-full max-w-[19.5rem] items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-300/20 px-6 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-emerald-300/30 sm:w-auto sm:max-w-none sm:px-8"
+                >
+                  Instructor bo'lish <GraduationCap className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -220,6 +228,12 @@ export default async function BusinessPage() {
           </div>
         </section>
 
+        <VintageBusinessCta
+          contactEmail={companyContact.email}
+          phoneDisplay={companyContact.phoneDisplay}
+          phoneHref={companyContact.phoneHref}
+        />
+
         <section className="bg-gray-50/50 px-4 py-16 dark:bg-black md:py-20">
           <div className="mx-auto max-w-5xl">
             <div className="mb-12 text-center">
@@ -263,7 +277,7 @@ export default async function BusinessPage() {
           </div>
         </section>
 
-        <section className="bg-blue-600 px-4 py-16 md:py-20">
+        <section className="theme-hidden-vintage bg-blue-600 px-4 py-16 md:py-20">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-3xl font-black text-white md:text-4xl">
               Jamoangizni kuchaytirishga tayyormisiz?

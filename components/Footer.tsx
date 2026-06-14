@@ -8,26 +8,34 @@ const quickLinks = [
   {
     href: "/about",
     label: "Biz haqimizda",
+    mark: "KE",
     icon: Users2,
     ariaLabel: "Kings Education haqida",
+    accent: "from-blue-500/20 via-cyan-400/10 to-white/5",
   },
   {
     href: "/contact",
     label: "Aloqa",
+    mark: "24",
     icon: Send,
     ariaLabel: "Aloqa markazi",
+    accent: "from-emerald-500/20 via-teal-400/10 to-white/5",
   },
   {
     href: "/subscription",
     label: "Rejalar",
+    mark: "PRO",
     icon: CreditCard,
     ariaLabel: "Subscription rejalari",
+    accent: "from-amber-400/20 via-yellow-300/10 to-white/5",
   },
   {
     href: "/offices",
     label: "Ofislar",
+    mark: "O2O",
     icon: Building2,
     ariaLabel: "Ofislar va kampuslar",
+    accent: "from-violet-500/20 via-indigo-400/10 to-white/5",
   },
 ];
 
@@ -50,16 +58,33 @@ export default async function Footer() {
             <p className="max-w-sm text-sm leading-relaxed text-gray-500 dark:text-gray-400">
               {siteContent.footerDescription}
             </p>
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="grid grid-cols-2 gap-3 pt-2 sm:flex sm:flex-wrap">
               {quickLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-blue-500/40 dark:hover:text-blue-400"
+                  className="group relative isolate min-h-16 overflow-hidden rounded-2xl border border-gray-200 bg-white px-3 py-3 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-white/20 sm:min-w-36"
                   aria-label={item.ariaLabel}
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
+                  <div
+                    className={`absolute inset-0 -z-10 bg-gradient-to-br ${item.accent} opacity-0 transition-opacity duration-300 group-hover:opacity-100`}
+                  />
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-900 shadow-inner dark:border-white/10 dark:bg-white/10 dark:text-white">
+                      <item.icon className="h-4 w-4" />
+                      <span className="absolute -right-1 -top-1 rounded-md border border-white/70 bg-white px-1 text-[9px] font-black leading-4 text-gray-900 shadow-sm dark:border-gray-800 dark:bg-gray-950 dark:text-white">
+                        {item.mark}
+                      </span>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-gray-900 dark:text-white">
+                        {item.label}
+                      </span>
+                      <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
+                        Kings
+                      </span>
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -86,12 +111,12 @@ export default async function Footer() {
               </li>
               <li>
                 <Link href="/shop" className="transition-colors hover:text-blue-600 hover:underline hover:underline-offset-4 dark:hover:text-blue-400">
-                  Marketplace
+                  Do'kon
                 </Link>
               </li>
               <li>
                 <Link href="/subscription" className="transition-colors hover:text-blue-600 hover:underline hover:underline-offset-4 dark:hover:text-blue-400">
-                  Subscription
+                  Obuna rejalari
                 </Link>
               </li>
               <li>
@@ -168,7 +193,7 @@ export default async function Footer() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             &copy; {new Date().getFullYear()} Kings Education. Barcha huquqlar himoyalangan.
           </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:mt-0 sm:justify-end">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:mt-0 sm:justify-end sm:pr-20">
             <PaymentLogoBadge brand="payme" />
             <PaymentLogoBadge brand="click" />
             <PaymentLogoBadge brand="visa" />

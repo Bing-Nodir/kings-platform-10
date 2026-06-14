@@ -19,6 +19,18 @@ export async function proxy(request: NextRequest) {
   }
 
   const loginRedirectPath = `${pathname}${request.nextUrl.search}`;
+  const isConfiguredAdmin = isPrimaryAdminEmail(user?.email);
+  let isAdmin = isConfiguredAdmin;
+
+  if (user && !isAdmin) {
+    const { data: profile } = await middlewareClient.supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    isAdmin = profile?.role === "admin";
+  }
 
   if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))) {
     const loginUrl = new URL("/login", request.url);
@@ -28,16 +40,16 @@ export async function proxy(request: NextRequest) {
 
   if (user && (pathname.startsWith("/login") || pathname.startsWith("/register"))) {
     return NextResponse.redirect(
-      new URL(isPrimaryAdminEmail(user.email) ? "/admin" : "/dashboard", request.url)
+      new URL(isAdmin ? "/admin" : "/dashboard", request.url)
     );
   }
 
-  if (user && isPrimaryAdminEmail(user.email) && pathname.startsWith("/dashboard")) {
+  if (user && isAdmin && pathname.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   if (user && pathname.startsWith("/admin")) {
-    if (!isPrimaryAdminEmail(user.email)) {
+    if (!isAdmin) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
